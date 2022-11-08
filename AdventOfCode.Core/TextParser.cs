@@ -2,7 +2,7 @@
 using Superpower.Model;
 using Superpower.Parsers;
 
-namespace AdventOfCode2015.Utilities; 
+namespace AdventOfCode.Core; 
 
 public static class SuperpowerExtensions
 {
