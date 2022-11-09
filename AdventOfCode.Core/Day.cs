@@ -12,18 +12,13 @@ public abstract class Day<TModel, TResult1, TResult2> : Day
 {
     private int DayNumber { get; }
     private string FileName => $"Inputs/day{DayNumber}";
-    private string InputString => File.ReadAllText(FileName);
+    private string InputString => File.ReadAllText(FileName).ReplaceLineEndings("\n");
     
     protected readonly ITestOutputHelper Output;
 
     protected virtual IEnumerable<(string, TResult1)> Tests1 { get; } = Enumerable.Empty<(string, TResult1)>();
     protected virtual IEnumerable<(string, TResult2)> Tests2 { get; } = Enumerable.Empty<(string, TResult2)>();
-
-    protected Day(ITestOutputHelper output)
-    {
-        DayNumber = int.Parse(NameMatch.Match(GetType().Name).Groups[1].Value);
-        Output = output;
-    }
+    
     protected Day(int dayNumber, ITestOutputHelper output)
     {
         DayNumber = dayNumber;
