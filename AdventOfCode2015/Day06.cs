@@ -17,7 +17,7 @@ public partial class Day06 : ParseLineDay<Day06.Instruction, int, int>
         from br in PointParser
         select new Region(tl, br);
 
-    protected override TextParser<Instruction> Parser { get; } =
+    protected override TextParser<Instruction> LineParser { get; } =
         (Span.EqualTo("turn off ").Then(RegionParser).Select(x => (Instruction) new Instruction.TurnOff(x.Item2))).Try()
         .Or(Span.EqualTo("turn on ").Then(RegionParser).Select(x => (Instruction) new Instruction.TurnOn(x.Item2)).Try())
         .Or(Span.EqualTo("toggle ").Then(RegionParser).Select(x => (Instruction) new Instruction.Toggle(x.Item2)));

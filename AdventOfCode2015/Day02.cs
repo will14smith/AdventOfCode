@@ -6,7 +6,7 @@ namespace AdventOfCode2015;
 [Day]
 public partial class Day02 : ParseLineDay<Day02.Model, int, int>
 {
-    protected override TextParser<Model> Parser { get; } =
+    protected override TextParser<Model> LineParser { get; } =
         from a in Numerics.IntegerInt32
         from _1 in Character.EqualTo('x')
         from b in Numerics.IntegerInt32

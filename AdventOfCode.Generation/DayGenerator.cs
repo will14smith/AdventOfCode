@@ -68,16 +68,23 @@ public class DayAttribute : System.Attribute
     
     private static void Execute(Compilation compilation, ImmutableArray<ClassDeclarationSyntax> classes, SourceProductionContext context)
     {
-        if (classes.IsDefaultOrEmpty)
+        try
         {
-            return;
-        }
+            if (classes.IsDefaultOrEmpty)
+            {
+                return;
+            }
 
-        var distinctClasses = classes.Distinct();
-        var metaData = distinctClasses.Select(c => DayBuilder.Build(compilation, c)).Where(x => x != null);
-        var source = metaData.Select(DayBuilder.Generate!);
-        
-        var result = string.Join("\n", source);
-        context.AddSource("DayExtensions.g.cs", SourceText.From(result, Encoding.UTF8));
+            var distinctClasses = classes.Distinct();
+            var metaData = distinctClasses.Select(c => DayBuilder.Build(compilation, c)).Where(x => x != null);
+            var source = metaData.Select(DayBuilder.Generate!);
+
+            var result = string.Join("\n", source);
+            context.AddSource("DayExtensions.g.cs", SourceText.From(result, Encoding.UTF8));
+        }        
+        catch (Exception ex)
+        {
+            context.AddSource("DayExtensions.error.cs", SourceText.From(ex.Message + "\n" + ex.StackTrace, Encoding.UTF8));
+        }
     }
 }

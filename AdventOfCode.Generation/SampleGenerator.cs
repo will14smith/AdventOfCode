@@ -69,16 +69,23 @@ public class SampleAttribute : System.Attribute
     
     private static void Execute(Compilation compilation, ImmutableArray<MethodDeclarationSyntax> methods, SourceProductionContext context)
     {
-        if (methods.IsDefaultOrEmpty)
+        try
         {
-            return;
-        }
+            if (methods.IsDefaultOrEmpty)
+            {
+                return;
+            }
 
-        var distinctMethods = methods.Distinct();
-        var samples = distinctMethods.Select(c => SampleBuilder.Build(compilation, c)).Where(x => x != null);
-        var source = samples.Select(SampleBuilder.Generate!);
-        
-        var result = string.Join("\n", source);
-        context.AddSource("SampleExtensions.g.cs", SourceText.From(result, Encoding.UTF8));
+            var distinctMethods = methods.Distinct();
+            var samples = distinctMethods.Select(c => SampleBuilder.Build(compilation, c)).Where(x => x != null);
+            var source = samples.Select(SampleBuilder.Generate!);
+
+            var result = string.Join("\n", source);
+            context.AddSource("SampleExtensions.g.cs", SourceText.From(result, Encoding.UTF8));
+        }
+        catch (Exception ex)
+        {
+            context.AddSource("SampleExtensions.error.cs", SourceText.From(ex.Message + "\n" + ex.StackTrace, Encoding.UTF8));
+        }
     }
 }

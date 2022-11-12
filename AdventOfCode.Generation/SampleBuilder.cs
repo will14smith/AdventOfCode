@@ -35,6 +35,11 @@ public static class SampleBuilder
             {
                 continue;
             }
+
+            if (attribute.ConstructorArguments.Length != 2)
+            {
+                continue;
+            }
             
             var input = attribute.ConstructorArguments[0].ToCSharpString();
             var value = attribute.ConstructorArguments[1].ToCSharpString();
