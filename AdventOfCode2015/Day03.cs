@@ -6,19 +6,9 @@ namespace AdventOfCode2015;
 [Day]
 public partial class Day03 : ParseDay<Day03.Direction[], int, int>
 {
-    protected override IEnumerable<(string, int)> Tests1 { get; } = new[]
-    {
-        (">", 2),
-        ("^>v<", 4),
-        ("^v^v^v^v^v", 2),
-    };
-    protected override IEnumerable<(string, int)> Tests2 { get; } = new[]
-    {
-        (">v", 3),
-        ("^>v<", 3),
-        ("^v^v^v^v^v", 11),
-    };
-    
+    [Sample(">", 2)]
+    [Sample("^>v<", 4)]
+    [Sample("^v^v^v^v^v", 2)]
     protected override int Part1(Direction[] input)
     {
         var location = (X: 0, Y: 0);
@@ -40,6 +30,9 @@ public partial class Day03 : ParseDay<Day03.Direction[], int, int>
         return visited.Count;
     }
 
+    [Sample(">v", 3)]
+    [Sample("^>v<", 3)]
+    [Sample("^v^v^v^v^v", 11)]
     protected override int Part2(Direction[] input)
     {
         var location1 = (X: 0, Y: 0);

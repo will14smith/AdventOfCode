@@ -30,6 +30,7 @@ public static class DayBuilder
         var sb = new StringBuilder();
         
         sb.AppendLine($"namespace {metaData.Namespace} {{");
+        sb.AppendLine("    [JetBrains.Annotations.UsedImplicitlyAttribute]");
         sb.AppendLine($"    public partial class {metaData.Class} {{");
         sb.AppendLine($"        public {metaData.Class}(ITestOutputHelper output) : base({metaData.Number}, output) {{ }}");
         sb.AppendLine("    }");
