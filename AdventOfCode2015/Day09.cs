@@ -7,12 +7,12 @@ namespace AdventOfCode2015;
 public partial class Day09 : ParseLineDay<(string A, string B, int Distance), int, int>
 {
     protected override TextParser<(string A, string B, int Distance)> LineParser =>
-        from a in Identifier.CStyle
+        from a in SuperpowerExtensions.Name
         from _1 in Span.EqualTo(" to ")
-        from b in Identifier.CStyle
+        from b in SuperpowerExtensions.Name
         from _2 in Span.EqualTo(" = ")
         from distance in Numerics.IntegerInt32
-        select (a.ToStringValue(), b.ToStringValue(), distance);
+        select (a, b, distance);
 
     [Sample("London to Dublin = 464\nLondon to Belfast = 518\nDublin to Belfast = 141", 605)]
     protected override int Part1(IEnumerable<(string A, string B, int Distance)> input) => Solve(input, (x, y) => x < y ? x : y);

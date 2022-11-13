@@ -7,6 +7,7 @@ namespace AdventOfCode.Core;
 public static class SuperpowerExtensions
 {
     public static readonly TextParser<string> NewLine = Character.EqualTo('\n').Select(_ => "\n").Or(Character.EqualTo('\r').Then(_ => Character.EqualTo('\n').Select(_ => "\n")));
+    public static readonly TextParser<string> Name = Identifier.CStyle.Select(x => x.ToStringValue());
 
     public static T MustParse<T>(this TextParser<T> parser, string input)
     {

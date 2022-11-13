@@ -6,8 +6,7 @@ namespace AdventOfCode2015;
 [Day]
 public partial class Day14 : ParseLineDay<Day14.Model, int, int>
 {
-    private static readonly TextParser<string> Name = Identifier.CStyle.Select(x => x.ToStringValue());
-    protected override TextParser<Model> LineParser => Name.ThenIgnore(Span.EqualTo(" can fly ")).Then(Numerics.IntegerInt32).ThenIgnore(Span.EqualTo(" km/s for ")).Then(Numerics.IntegerInt32).ThenIgnore(Span.EqualTo(" seconds, but then must rest for ")).Then(Numerics.IntegerInt32).ThenIgnore(Span.EqualTo(" seconds."))
+    protected override TextParser<Model> LineParser => SuperpowerExtensions.Name.ThenIgnore(Span.EqualTo(" can fly ")).Then(Numerics.IntegerInt32).ThenIgnore(Span.EqualTo(" km/s for ")).Then(Numerics.IntegerInt32).ThenIgnore(Span.EqualTo(" seconds, but then must rest for ")).Then(Numerics.IntegerInt32).ThenIgnore(Span.EqualTo(" seconds."))
         .Select(x => new Model(x.Item1.Item1.Item1, x.Item1.Item1.Item2, x.Item1.Item2, x.Item2));
 
     protected override int Part1(IEnumerable<Model> input) => input.Max(x => SimulateFor(x, 2503));
