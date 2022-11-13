@@ -11,7 +11,17 @@ public static class DayBuilder
 
     public static Day? Build(Compilation compilation, ClassDeclarationSyntax classDeclarationSyntax)
     {
-        var semanticModel = compilation.GetSemanticModel(classDeclarationSyntax.SyntaxTree);
+        SemanticModel semanticModel;
+
+        try
+        {
+            semanticModel = compilation.GetSemanticModel(classDeclarationSyntax.SyntaxTree);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+
         if (semanticModel.GetDeclaredSymbol(classDeclarationSyntax) is not INamedTypeSymbol classSymbol)
         {
             // something went wrong!
