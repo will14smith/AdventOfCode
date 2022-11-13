@@ -7,6 +7,6 @@ public abstract class ParseLineDay<TModel, TResult1, TResult2> : ParseDay<IEnume
 {
     protected ParseLineDay(int dayNumber, ITestOutputHelper output) : base(dayNumber, output) { }
 
-    protected override TextParser<IEnumerable<TModel>> Parser => LineParser.ManyDelimitedBy(Span.EqualTo('\n')).Select(x => (IEnumerable<TModel>)x);
+    protected override TextParser<IEnumerable<TModel>> Parser => LineParser.ManyDelimitedBy(Span.EqualTo('\n')).AtEnd().Select(x => (IEnumerable<TModel>)x);
     protected abstract TextParser<TModel> LineParser { get; }
 }

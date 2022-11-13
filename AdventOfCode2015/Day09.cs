@@ -28,7 +28,7 @@ public partial class Day09 : ParseLineDay<(string A, string B, int Distance), in
         edges.ForEach(e => indexedEdges[(e.B, e.A)] = e.Distance);
 
         var cities = edges.SelectMany(x => new[] { x.A, x.B }).Distinct().ToList();
-        var permutations = GetPermutations(cities, cities.Count).ToList();
+        var permutations = Permutations.Get(cities, cities.Count).ToList();
 
         int? solution = null;
         foreach (var permutation in permutations)
@@ -57,13 +57,5 @@ public partial class Day09 : ParseLineDay<(string A, string B, int Distance), in
         }
 
         return solution ?? 0;
-    }
-    
-    private static IEnumerable<IEnumerable<T>> GetPermutations<T>(IEnumerable<T> list, int length)
-    {
-        if (length == 1) return list.Select(t => new T[] { t });
-        return GetPermutations(list, length - 1)
-            .SelectMany(t => list.Where(o => !t.Contains(o)),
-                (t1, t2) => t1.Concat(new T[] { t2 }));
     }
 }
