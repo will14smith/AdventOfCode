@@ -21,36 +21,17 @@ public partial class Day22 : ParseDay<Day22.Boss, int, int>
         var player = new Player(50, 500, 0);
         var initial = new Game(hardMode, player, input, State.PlayerTurn, new Effects(0, 0, 0));
 
-        var states = new PriorityQueue<Game, int>();
-        states.Enqueue(initial, 0);
+        return OptimisedSearch.Solve(initial, 0, new Search()).Player.ManaSpend;
+    }
 
-        var visited = new HashSet<Game>();
+    private class Search : OptimisedSearch.Search<Game, int>
+    {
+        public override IEnumerable<Game> Next(Game item) => PlayAllTurn(item);
+        
+        public override int GetPriority(Game item) => item.Player.ManaSpend;
 
-        while (states.Count > 0)
-        {
-            var current = states.Dequeue();
-            if (current.State == State.PlayerWon)
-            {
-                return current.Player.ManaSpend;
-            }
-
-            var next = PlayAllTurn(current);
-
-            foreach (var game in next)
-            {
-                if (game.State == State.BossWon)
-                {
-                    continue;
-                }
-
-                if (visited.Add(game))
-                {
-                    states.Enqueue(game, game.Player.ManaSpend);
-                }
-            }
-        }
-
-        throw new Exception("solution not found");
+        public override bool IsGoal(Game item) => item.State == State.PlayerWon;
+        public override bool ShouldSkip(Game item) => item.State == State.BossWon;
     }
 
     private static IEnumerable<Game> PlayAllTurn(Game initial)
