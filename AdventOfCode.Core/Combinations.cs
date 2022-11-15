@@ -2,11 +2,11 @@
 
 public static class Combinations
 {
-    public static IEnumerable<IEnumerable<T>> Get<T>(ReadOnlySpan<T> list)
+    public static IEnumerable<IEnumerable<T>> Get<T>(IReadOnlyList<T> list)
     {
         var combinations = Enumerable.Empty<IEnumerable<T>>();
         
-        for (var i = 1; i <= list.Length; i++)
+        for (var i = 1; i <= list.Count; i++)
         {
             combinations = combinations.Concat(Get(list, i));
         }
@@ -14,37 +14,57 @@ public static class Combinations
         return combinations;
     }
     
-    //
-    // public static IEnumerable<IEnumerable<T>> Get<T>(IEnumerable<T> list, int length) where T : IComparable
-    // {
-    //     if (length == 1)
-    //     {
-    //         return list.Select(t => new [] { t });
-    //     }
-    //     
-    //     return Get(list, length - 1)
-    //         .SelectMany(t => list.Where(o => o.CompareTo(t.Last()) > 0), 
-    //             (t1, t2) => t1.Concat(new [] { t2 }));
-    // }
-
-    public static IEnumerable<IEnumerable<T>> Get<T>(ReadOnlySpan<T> list, int length)
+    public static IEnumerable<IEnumerable<T>> Get<T>(IReadOnlyList<T> input, int outputLength)
     {
-        if (length == 0)
+        var inputLength = input.Count;
+        if (outputLength > inputLength)
         {
-            return new[] { Array.Empty<T>() };
+            yield break;
         }
 
-        if (list.Length == 0)
+        var indices = Enumerable.Range(0, outputLength).ToArray();
+
+        yield return Build(input, indices);
+
+        while (true)
         {
-            return Array.Empty<IEnumerable<T>>();
+            var i = outputLength - 1;
+            var didBreak = false;
+            
+            for (; i >= 0; i--)
+            {
+                if (indices[i] == i + inputLength - outputLength) continue;
+                
+                didBreak = true;
+                break;
+            }
+
+            if (!didBreak)
+            {
+                yield break;
+            }
+
+            indices[i] += 1;
+            
+            for (var j = i + 1; j < outputLength; j++)
+            {
+                indices[j] = indices[j - 1] + 1;
+            }  
+            
+            yield return Build(input, indices);
         }
+        
+        static IEnumerable<T> Build(IReadOnlyList<T> input, in ReadOnlySpan<int> indices)
+        {
+            var outputLength = indices.Length;
+            var result = new T[outputLength];
 
-        var head = list[0];
-        var sub = Get(list[1..], length - 1);
-        var headPlusSub = sub.Select(x => x.Prepend(head));
-
-        var comb = Get(list[1..], length);
-
-        return headPlusSub.Concat(comb);
+            for (var i = 0; i < outputLength; i++)
+            {
+                result[i] = input[indices[i]];
+            }
+            
+            return result;
+        }
     }
 }

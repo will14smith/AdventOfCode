@@ -43,6 +43,10 @@ public static class SampleBuilder
             
             var input = attribute.ConstructorArguments[0].ToCSharpString();
             var value = attribute.ConstructorArguments[1].ToCSharpString();
+            if (attribute.ConstructorArguments[1].Type?.Name == "Int64")
+            {
+                value += "L";
+            }
             
             samples.Add(new Sample(input, value));
         }
