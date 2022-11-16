@@ -30,13 +30,23 @@ public partial class Day13 : ParseLineDay<Day13.Model, int, int>
     private static int Solve(IEnumerable<Model> input)
     {
         var edges = input.ToList();
-        var people = edges.SelectMany(x => new[] { x.A, x.B }).ToHashSet();
+        var peopleNames = edges.SelectMany(x => new[] { x.A, x.B }).Distinct().ToList();
+        
+        var peopleMapping = peopleNames.Select((x, i) => (x, i)).ToDictionary(x => x.x, x => x.i);
+        var numberOfPeople = peopleNames.Count;
+        var people = Enumerable.Range(0, numberOfPeople).ToList();
 
-        var indexedEdges = new Dictionary<(string A, string B), int>();
-        edges.ForEach(e => indexedEdges[(e.A, e.B)] = e.Gain);
-        edges.ForEach(e => indexedEdges[(e.B, e.A)] = e.Gain);
-
-        var permutations = Permutations.Get(people);
+        var edgeMatrix = new int?[numberOfPeople * numberOfPeople];
+        
+        foreach (var edge in edges)
+        {
+            var a = peopleMapping[edge.A];
+            var b = peopleMapping[edge.B];
+            
+            edgeMatrix[a * numberOfPeople + b] = edge.Gain;
+        }
+        
+        var permutations = Permutations.Get(people).ToList();
 
         int? solution = null;
         foreach (var permutation in permutations)
@@ -51,23 +61,23 @@ public partial class Day13 : ParseLineDay<Day13.Model, int, int>
                 var a = permutationList[i];
                 var b = permutationList[(i + 1) % permutationList.Count];
 
-                var key = (a, b);
-                if (!indexedEdges.TryGetValue(key, out var g))
+                var g = edgeMatrix[a * numberOfPeople + b];
+                if (g == null)
                 {
                     valid = false;
                     break;
                 }
 
-                gain += g;
+                gain += g.Value;
 
-                key = (b, a);
-                if (!indexedEdges.TryGetValue(key, out g))
+                g = edgeMatrix[b * numberOfPeople + a];
+                if (g == null)
                 {
                     valid = false;
                     break;
                 }
 
-                gain += g;
+                gain += g.Value;
             }
 
             if (valid)

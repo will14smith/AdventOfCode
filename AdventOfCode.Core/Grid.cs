@@ -36,29 +36,27 @@ public class Grid<TElement>
     {
         var newGrid = new Grid<TSelect>(new TSelect[_elements.Length], Width);
         
-        for (var i = 0; i < _elements.Length; i++)
-        {
+        Parallel.For(0, _elements.Length, i =>
+        { 
             newGrid._elements[i] = selector(_elements[i]);
-        }
+        });
         
         return newGrid;
     }
     public Grid<TSelect> Select<TSelect>(Func<TElement, Grid<TElement>, Position, TSelect> selector)
     {
-        var y = 0;
-        var i = 0;
-        
         var newGrid = new Grid<TSelect>(new TSelect[_elements.Length], Width);
-        
-        while (i < _elements.Length)
+
+        Parallel.For(0, Height, y =>
         {
+            var i = y * Width;
+            
             for (var x = 0; x < Width; x++)
             {
                 newGrid._elements[i] = selector(_elements[i], this, new Position(x, y));
                 i++;
             }
-            y++;
-        }
+        });
         
         return newGrid;
     }

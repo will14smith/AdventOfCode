@@ -44,7 +44,7 @@ public static class Combinations
                 yield break;
             }
 
-            indices[i] += 1;
+            indices[i]++;
             
             for (var j = i + 1; j < outputLength; j++)
             {

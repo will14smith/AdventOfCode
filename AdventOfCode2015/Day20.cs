@@ -7,24 +7,12 @@ public partial class Day20 : Day<int, int, int>
 
     protected override int Part1(int input)
     {
-        var n = 1;
-        while (true)
-        {
-            var d = SumDivisors(n) * 10;
-            if (d >= input) return n;
-            n++;
-        }
+        return IterateBruteForce.SolveMin(i => SumDivisors(i+1) * 10 >= input) + 1;
     }
 
     protected override int Part2(int input)
     {
-        var n = 1;
-        while (true)
-        {
-            var d = SumDivisors50(n) * 11;
-            if (d > input) return n;
-            n++;
-        }
+        return IterateBruteForce.SolveMin(i => SumDivisors50(i+1) * 10 >= input) + 1;
     }
 
     protected static int SumDivisors(int n) => Divisors(n).Sum();
