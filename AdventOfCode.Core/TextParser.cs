@@ -75,7 +75,7 @@ public static class SuperpowerExtensions
             select result;
     }
 
-    public static TextParser<T> ThenIgnoreOptional<T, T2>(this TextParser<T> parser, TextParser<T2> ignoreParser)
+    public static TextParser<T> ThenIgnoreOptional<T, T2>(this TextParser<T> parser, TextParser<T2?> ignoreParser)
     {
         return
             from result in parser
