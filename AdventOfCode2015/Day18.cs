@@ -32,7 +32,7 @@ public partial class Day18 : Day<Grid<bool>, int, int>
     {
         return grid.Select(static (cell, grid, position) =>
         {
-            var neighbours = position.StrictNeighbours.Where(grid.IsValid).Select(grid.Get).Count(x => x);
+            var neighbours = position.StrictNeighbours().Where(grid.IsValid).Select(grid.Get).Count(x => x);
             return cell ? neighbours is 2 or 3 : neighbours is 3;
         });
     }
