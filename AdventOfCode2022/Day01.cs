@@ -9,11 +9,15 @@ public partial class Day01 : Day<Day01.Model, int, int>
     private static Elf ParseElf(string input) => new(input.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).Select(calories => new Food(calories)).ToList());
 
     [Sample(Sample, 24000)]
-    protected override int Part1(Model input) => input.Elves.Max(elf => elf.Food.Sum(food => food.Calories));
+    protected override int Part1(Model input) => input.Elves.Max(elf => elf.TotalCalories);
     [Sample(Sample, 45000)]
-    protected override int Part2(Model input) => input.Elves.Select(elf => elf.Food.Sum(food => food.Calories)).OrderByDescending(x => x).Take(3).Sum();
+    protected override int Part2(Model input) => input.Elves.Select(elf => elf.TotalCalories).OrderByDescending(x => x).Take(3).Sum();
 
     public record Model(List<Elf> Elves);
-    public record Elf(List<Food> Food);
+
+    public record Elf(List<Food> Food)
+    {
+        public int TotalCalories => Food.Sum(f => f.Calories);
+    }
     public record Food(int Calories);
 }
