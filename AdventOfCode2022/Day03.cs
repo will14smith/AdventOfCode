@@ -12,21 +12,25 @@ public partial class Day03 : LineDay<Day03.Bag, int, int>
     }
     
     [Sample(Sample, 157)]
-    protected override int Part1(IEnumerable<Bag> input) => input.Sum(x => x.CommonItems.Sum(Score));
+    protected override int Part1(IEnumerable<Bag> input) => input.Sum(ScorePart1);
 
     [Sample(Sample, 70)]
-    protected override int Part2(IEnumerable<Bag> input) => GroupIntoThrees(input).Select(x => x.A.All.Intersect(x.B.All).Intersect(x.C.All).Sum(Score)).Sum();
+    protected override int Part2(IEnumerable<Bag> input) => input.BatchesOf3().Sum(ScorePart2);
 
-    private static IEnumerable<(Bag A, Bag B, Bag C)> GroupIntoThrees(IEnumerable<Bag> input)
+    private static int ScorePart1(Bag bag)
     {
-        var inputList = input.ToArray();
-
-        for (var i = 0; i < inputList.Length; i+=3)
-        {
-            yield return (inputList[i], inputList[i + 1], inputList[i + 2]);
-        }
+        var items = bag.First.ToHashSet();
+        items.IntersectWith(bag.Second);
+        return items.Sum(Score);
     }
-
+    private static int ScorePart2((Bag A, Bag B, Bag C) group)
+    {
+        var items = group.A.All.ToHashSet();
+        items.IntersectWith(group.B.All);
+        items.IntersectWith(group.C.All);
+        return items.Sum(Score);
+    }
+    
     private static int Score(char item)
     {
         return item switch
@@ -39,7 +43,6 @@ public partial class Day03 : LineDay<Day03.Bag, int, int>
     
     public record Bag(IReadOnlyList<char> First, IReadOnlyList<char> Second)
     {
-        public IReadOnlySet<char> CommonItems => First.Intersect(Second).ToHashSet();
         public IReadOnlySet<char> All => First.Concat(Second).ToHashSet();
     }
 }
