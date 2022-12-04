@@ -24,9 +24,9 @@ public partial class Day04 : ParseLineDay<Day04.ElfPair, int, int>
         var aMask = pair.A.BitMask;
         var bMask = pair.B.BitMask;
 
-        var cMask = aMask | bMask;
+        var cMask = aMask & bMask;
 
-        return Int128.PopCount(cMask) == Int128.Max(Int128.PopCount(aMask), Int128.PopCount(bMask));
+        return cMask == aMask || cMask == bMask;
     }
     
     private static bool PartOverlapping(ElfPair pair)
