@@ -43,46 +43,18 @@ public partial class Day05 : ParseDay<Day05.Model, string, string>
     protected override TextParser<Model> Parser => ModelParser;
     
     [Sample(Sample, "CMZ")]
-    protected override string Part1(Model input)
-    {
-        var layout = input.Instructions.Count == 4 ? SampleBoxes : input.Layout;
-        
-        foreach (var instruction in input.Instructions)
-        {
-            layout = Apply(layout, instruction);
-        }
-
-        var result = new StringBuilder();
-        for (var i = 1; i <= layout.Boxes.Count; i++)
-        {
-            result.Append(layout.Boxes[i].Peek());
-        }
-        return result.ToString();
-    }
-
-    private Layout Apply(Layout layout, Instruction instruction)
-    {
-        var from = layout.Boxes[instruction.From];
-        var to = layout.Boxes[instruction.To];
-
-        for (int i = 0; i < instruction.Count; i++)
-        {
-            from = from.Pop(out var box);
-            to = to.Push(box);
-        }
-
-        var newBoxes = layout.Boxes.SetItem(instruction.From, from).SetItem(instruction.To, to);
-        return new Layout(newBoxes);
-    }
+    protected override string Part1(Model input) => Solve(input, true);
 
     [Sample(Sample, "MCD")]
-    protected override string Part2(Model input)
+    protected override string Part2(Model input) => Solve(input, false);
+
+    private static string Solve(Model input, bool singleBoxMovesOnly)
     {
         var layout = input.Instructions.Count == 4 ? SampleBoxes : input.Layout;
-        
+
         foreach (var instruction in input.Instructions)
         {
-            layout = Apply2(layout, instruction);
+            layout = Apply(layout, instruction, singleBoxMovesOnly);
         }
 
         var result = new StringBuilder();
@@ -90,28 +62,39 @@ public partial class Day05 : ParseDay<Day05.Model, string, string>
         {
             result.Append(layout.Boxes[i].Peek());
         }
+
         return result.ToString();
     }
 
-    private Layout Apply2(Layout layout, Instruction instruction)
+    private static Layout Apply(Layout layout, Instruction instruction, bool singleBoxMovesOnly)
     {
         var from = layout.Boxes[instruction.From];
         var to = layout.Boxes[instruction.To];
 
-        var stack = new Stack<char>();
-        
-        for (int i = 0; i < instruction.Count; i++)
+        if (singleBoxMovesOnly)
         {
-            from = from.Pop(out var box);
-            stack.Push(box);
+            for (var i = 0; i < instruction.Count; i++)
+            {
+                from = from.Pop(out var box);
+                to = to.Push(box);
+            }
         }
-        for (int i = 0; i < instruction.Count; i++)
+        else
         {
-            to = to.Push(stack.Pop());
+            var stack = new Stack<char>();
+            for (var i = 0; i < instruction.Count; i++)
+            {
+                from = from.Pop(out var box);
+                stack.Push(box);
+            }
+
+            for (var i = 0; i < instruction.Count; i++)
+            {
+                to = to.Push(stack.Pop());
+            }
         }
 
-        var newBoxes = layout.Boxes.SetItem(instruction.From, from).SetItem(instruction.To, to);
-        return new Layout(newBoxes);
+        return new Layout(layout.Boxes.SetItem(instruction.From, from).SetItem(instruction.To, to));
     }
 
     public record Model(Layout Layout, IReadOnlyList<Instruction> Instructions);
