@@ -8,37 +8,33 @@ namespace AdventOfCode2022;
 [Day]
 public partial class Day05 : ParseDay<Day05.Model, string, string>
 {
-    private const string Sample = "move 1 from 2 to 1\nmove 3 from 1 to 3\nmove 2 from 2 to 1\nmove 1 from 1 to 2";
+    private const string Sample = "    [D]    \n[N] [C]    \n[Z] [M] [P]\n 1   2   3 \n\nmove 1 from 2 to 1\nmove 3 from 1 to 3\nmove 2 from 2 to 1\nmove 1 from 1 to 2";
+
+    private static readonly TextParser<char> Space = Character.EqualTo(' ');
+
+    private static readonly TextParser<char?> BoxParser = Character.EqualTo('[').IgnoreThen(Character.Upper).ThenIgnore(Character.EqualTo(']')).Select(x => (char?)x).Or(Span.EqualTo("   ").Select(x => (char?)null));
+    private static readonly TextParser<char?[]> BoxLineParser = BoxParser.ManyDelimitedBy(Space);
+    private static readonly TextParser<int> BoxNameParser = Space.IgnoreThen(Numerics.IntegerInt32).ThenIgnore(Space);
+    private static readonly TextParser<int[]> BoxNamesParser = BoxNameParser.ManyDelimitedBy(Space);
     
+    private static readonly TextParser<Layout> LayoutParser = 
+        BoxLineParser.Try().ManyDelimitedBy(SuperpowerExtensions.NewLine)
+            .ThenIgnore(SuperpowerExtensions.NewLine)
+            .Then(BoxNamesParser)
+            .Select(x => Layout.FromParser(x.Item1, x.Item2));
+
     private static readonly TextParser<Instruction> InstructionParser = 
             Span.EqualTo("move ").IgnoreThen(Numerics.IntegerInt32)
                 .ThenIgnore(Span.EqualTo(" from ")).Then(Numerics.IntegerInt32)
                 .ThenIgnore(Span.EqualTo(" to ")).Then(Numerics.IntegerInt32)
                 .Select(x => new Instruction(x.Item1.Item1, x.Item1.Item2, x.Item2));
-
-    private static readonly Layout SampleBoxes = new Layout(
-        ImmutableDictionary<int, ImmutableStack<char>>.Empty
-            .Add(1, ImmutableStack<char>.Empty.Push('Z').Push('N'))
-            .Add(2, ImmutableStack<char>.Empty.Push('M').Push('C').Push('D'))
-            .Add(3, ImmutableStack<char>.Empty.Push('P'))
-    );
-    private static readonly Layout HardCodedBoxes = new Layout(
-        ImmutableDictionary<int, ImmutableStack<char>>.Empty
-            .Add(1, ImmutableStack<char>.Empty.Push('H').Push('R').Push('B').Push('D').Push('Z').Push('F').Push('L').Push('S'))
-            .Add(2, ImmutableStack<char>.Empty.Push('T').Push('B').Push('M').Push('Z').Push('R'))
-            .Add(3, ImmutableStack<char>.Empty.Push('Z').Push('L').Push('C').Push('H').Push('N').Push('S'))
-            .Add(4, ImmutableStack<char>.Empty.Push('S').Push('C').Push('F').Push('J'))
-            .Add(5, ImmutableStack<char>.Empty.Push('P').Push('G').Push('H').Push('W').Push('R').Push('Z').Push('B'))
-            .Add(6, ImmutableStack<char>.Empty.Push('V').Push('J').Push('Z').Push('G').Push('D').Push('N').Push('M').Push('T'))
-            .Add(7, ImmutableStack<char>.Empty.Push('G').Push('L').Push('N').Push('W').Push('F').Push('S').Push('P').Push('Q'))
-            .Add(8, ImmutableStack<char>.Empty.Push('M').Push('Z').Push('R'))
-            .Add(9, ImmutableStack<char>.Empty.Push('M').Push('C').Push('L').Push('G').Push('V').Push('R').Push('T'))
-    );
     
-    private static readonly TextParser<Model> ModelParser = InstructionParser.ManyDelimitedBy(SuperpowerExtensions.NewLine).Select(instructions => new Model(
-        HardCodedBoxes,
-        instructions
-    ));
+    private static readonly TextParser<Model> ModelParser = 
+        LayoutParser
+            .ThenIgnore(SuperpowerExtensions.NewLine.Repeat(2))
+            .Then(InstructionParser.ManyDelimitedBy(SuperpowerExtensions.NewLine))
+            .AtEnd()
+        .Select(x => new Model(x.Item1, x.Item2));
 
     protected override TextParser<Model> Parser => ModelParser;
     
@@ -50,7 +46,7 @@ public partial class Day05 : ParseDay<Day05.Model, string, string>
 
     private static string Solve(Model input, bool singleBoxMovesOnly)
     {
-        var layout = input.Instructions.Count == 4 ? SampleBoxes : input.Layout;
+        var layout = input.Layout;
 
         foreach (var instruction in input.Instructions)
         {
@@ -99,6 +95,35 @@ public partial class Day05 : ParseDay<Day05.Model, string, string>
 
     public record Model(Layout Layout, IReadOnlyList<Instruction> Instructions);
 
-    public record Layout(ImmutableDictionary<int, ImmutableStack<char>> Boxes);
+    public record Layout(ImmutableDictionary<int, ImmutableStack<char>> Boxes)
+    {
+        public static Layout FromParser(char?[][] boxesInput, int[] names)
+        {
+            var boxes = ImmutableDictionary<int, ImmutableStack<char>>.Empty;
+
+            foreach (var name in names)
+            {
+                boxes = boxes.SetItem(name, ImmutableStack<char>.Empty);
+            }
+            
+            for (var lineIndex = boxesInput.Length - 1; lineIndex >= 0; lineIndex--)
+            {
+                var line = boxesInput[lineIndex];
+                for (var nameIndex = 0; nameIndex < names.Length; nameIndex++)
+                {
+                    var name = names[nameIndex];
+                    var box = line[nameIndex];
+
+                    if (box != null)
+                    {
+                        boxes = boxes.SetItem(name, boxes[name].Push(box.Value));
+                    }
+                }
+            }
+
+            return new Layout(boxes);
+        }
+    }
+
     public record Instruction(int Count, int From, int To);
 }
