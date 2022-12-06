@@ -1,12 +1,35 @@
 namespace AdventOfCode2022;
 
 [Day]
-public partial class Day06 : Day<Day06.Model, int, int>
+public partial class Day06 : Day<string, int, int>
 {
-    protected override Model Parse(string input) => throw new NotImplementedException();
+    protected override string Parse(string input) => input;
 
-    protected override int Part1(Model input) => throw new NotImplementedException();
-    protected override int Part2(Model input) => throw new NotImplementedException();
+    [Sample("mjqjpqmgbljsphdztnvjfqwrcgsmlb", 7)]
+    [Sample("bvwbjplbgvbhsrlpgdmjqwftvncz", 5)]
+    [Sample("nppdvjthqldpwncqszvftbrmjlhg", 6)]
+    [Sample("nznrnfrfntjfmvfwmzdfjlvtqnbhcprsg", 10)]
+    [Sample("zcfzfwzzqfrljwzlrfnpqdbhtmscgvjw", 11)]
+    protected override int Part1(string input) => FindStarter(input, 4);
 
-    public record Model;
+    [Sample("mjqjpqmgbljsphdztnvjfqwrcgsmlb", 19)]
+    [Sample("bvwbjplbgvbhsrlpgdmjqwftvncz", 23)]
+    [Sample("nppdvjthqldpwncqszvftbrmjlhg", 23)]
+    [Sample("nznrnfrfntjfmvfwmzdfjlvtqnbhcprsg", 29)]
+    [Sample("zcfzfwzzqfrljwzlrfnpqdbhtmscgvjw", 26)]
+    protected override int Part2(string input) => FindStarter(input, 14);
+
+    private static int FindStarter(string input, int length)
+    {
+        for (var i = length; i < input.Length; i++)
+        {
+            var chars = input[(i - length)..i];
+            if (chars.ToHashSet().Count == length)
+            {
+                return i;
+            }
+        }
+
+        throw new Exception("no solution");
+    }
 }
