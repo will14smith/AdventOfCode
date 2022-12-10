@@ -37,4 +37,7 @@ public static class ArrayExtensions
     }
 
     public static void UpdateTop<T>(this Stack<T> stack, Func<T, T> updateFn) => stack.Push(updateFn(stack.Pop()));
+
+    public static string Join<T>(this IEnumerable<T> input) => string.Join("", input);
+    public static string Join<T>(this IEnumerable<T> input, string sep) => string.Join(sep, input);
 }
