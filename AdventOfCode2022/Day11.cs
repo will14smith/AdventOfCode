@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using Superpower;
 
 namespace AdventOfCode2022;
 
@@ -9,30 +8,22 @@ public partial class Day11 : ParseDay<Day11.Model, Day11.TokenType, long, long>
     private const string Sample = "Monkey 0:\n  Starting items: 79, 98\n  Operation: new = old * 19\n  Test: divisible by 23\n    If true: throw to monkey 2\n    If false: throw to monkey 3\n\nMonkey 1:\n  Starting items: 54, 65, 75, 74\n  Operation: new = old + 6\n  Test: divisible by 19\n    If true: throw to monkey 2\n    If false: throw to monkey 0\n\nMonkey 2:\n  Starting items: 79, 60, 97\n  Operation: new = old * old\n  Test: divisible by 13\n    If true: throw to monkey 1\n    If false: throw to monkey 3\n\nMonkey 3:\n  Starting items: 74\n  Operation: new = old + 3\n  Test: divisible by 17\n    If true: throw to monkey 0\n    If false: throw to monkey 1";
   
     [Sample(Sample, 10605L)]
-    protected override long Part1(Model model)
-    {
-        for (var round = 0; round < 20; round++)
-        {
-            model = RunRound(model, true);
-        }
-
-        var top2 = model.Monkeys.Select(x => x.ItemsInspected).OrderByDescending(x => x).Take(2).ToList();
-        return top2[0] * top2[1];
-    }
+    protected override long Part1(Model model) => RunRounds(model, 20, true);
 
     [Sample(Sample, 2713310158L)]
-    protected override long Part2(Model model)
+    protected override long Part2(Model model) => RunRounds(model, 10_000, false);
+
+    private static long RunRounds(Model model, int count, bool relaxed)
     {
-        for (var round = 0; round < 10_000; round++)
+        for (var round = 0; round < count; round++)
         {
-            model = RunRound(model, false);
+            model = RunRound(model, relaxed);
         }
 
-        var top2 = model.Monkeys.Select(x => x.ItemsInspected).OrderByDescending(x => x).Take(2).ToList();
-        return top2[0] * top2[1];
+        return model.Monkeys.Select(x => x.ItemsInspected).OrderByDescending(x => x).Take(2).Aggregate(1L, (acc, x) => acc * x);
     }
-
-    private Model RunRound(Model model, bool relaxed)
+    
+    private static Model RunRound(Model model, bool relaxed)
     {
         for (var i = 0; i < model.Monkeys.Count; i++)
         {
@@ -42,21 +33,17 @@ public partial class Day11 : ParseDay<Day11.Model, Day11.TokenType, long, long>
         return model;
     }
 
-    private Model RunTurn(Model model, int id, bool relaxed)
+    private static Model RunTurn(Model model, int id, bool relaxed)
     {
-        var mod = model.Monkeys.Aggregate(1L, (acc, monkey) => acc * monkey.Action.Modulo); 
-        
+        // the monkey could be its own target, so make sure to look it up each time
         while (!model.Monkeys[id].Items.IsEmpty)
         {
             var monkey = model.Monkeys[id];
-
             model = model.Dequeue(id, out var item);
+            
             var newItem = Evaluate(monkey.WorryExpression, item);
-            if (relaxed)
-            {
-                newItem /= 3;
-            }
-            newItem %= mod;
+            if (relaxed) newItem /= 3;
+            newItem %= model.Modulo;
 
             var test = newItem % monkey.Action.Modulo == 0;
             model = model.Enqueue(test ? monkey.Action.DivisibleTarget : monkey.Action.IndivisibleTarget, newItem);
@@ -65,7 +52,7 @@ public partial class Day11 : ParseDay<Day11.Model, Day11.TokenType, long, long>
         return model;
     }
 
-    private long Evaluate(MonkeyExpression expr, long old) =>
+    private static long Evaluate(MonkeyExpression expr, long old) =>
         expr switch
         {
             MonkeyExpression.Constant constant => constant.Value,
@@ -77,10 +64,10 @@ public partial class Day11 : ParseDay<Day11.Model, Day11.TokenType, long, long>
             _ => throw new ArgumentOutOfRangeException(nameof(expr))
         };
 
-    public record Model(ImmutableList<Monkey> Monkeys)
+    public record Model(ImmutableList<Monkey> Monkeys, long Modulo)
     {
-        public Model Enqueue(int id, long item) => new(Monkeys.SetItem(id, Monkeys[id].Enqueue(item)));
-        public Model Dequeue(int id, out long item) => new(Monkeys.SetItem(id, Monkeys[id].Dequeue(out item)));
+        public Model Enqueue(int id, long item) => this with { Monkeys = Monkeys.SetItem(id, Monkeys[id].Enqueue(item)) };
+        public Model Dequeue(int id, out long item) => this with { Monkeys = Monkeys.SetItem(id, Monkeys[id].Dequeue(out item)) };
     }
 
     public record Monkey(int Id, ImmutableQueue<long> Items, MonkeyExpression WorryExpression, MonkeyAction Action, long ItemsInspected = 0)

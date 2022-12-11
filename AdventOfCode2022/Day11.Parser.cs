@@ -42,10 +42,14 @@ public partial class Day11
         from action in ActionParser
         select new Monkey(id, ToQueue(items.Select(x => (long)x)), expr, action);
     
-    private static readonly TokenListParser<TokenType, Model> ModelParser = MonkeyParser.Many().AtEnd().Select(x => new Model(x.ToImmutableList()));
+    private static readonly TokenListParser<TokenType, Model> ModelParser = MonkeyParser.Many().AtEnd().Select(x => new Model(x.ToImmutableList(), CalculateModelModulo(x)));
     
     private static ImmutableQueue<T> ToQueue<T>(IEnumerable<T> items) => 
         items.Aggregate(ImmutableQueue<T>.Empty, (current, item) => current.Enqueue(item));
+
+    private static long CalculateModelModulo(IEnumerable<Monkey> monkeys) =>
+        // this could have duplicate co-primes that could be de-duplicated
+        monkeys.Aggregate(1L, (acc, monkey) => acc * monkey.Action.Modulo);
 
     protected override TokenListParser<TokenType, Model> Parser => ModelParser;
 
