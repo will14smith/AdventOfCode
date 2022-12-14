@@ -116,93 +116,87 @@ public partial class Day14 : ParseDay<Day14.Input, int, int>
                 var point = points[i - 1];
                 var nextPoint = points[i];
 
-                if (point.X == nextPoint.X)
-                {
-                    var x = point.X;
-                    var (startY, endY) = point.Y < nextPoint.Y ? (point.Y, nextPoint.Y) : (nextPoint.Y, point.Y);
-                    
-                    for (var y = startY; y <= endY; y++)
-                    {
-                        grid[x, y] = State.Rock;
-                    }
-                }
-                else if(point.Y == nextPoint.Y)
-                {
-                    var y = point.Y;
-                    var (startX, endX) = point.X < nextPoint.X ? (point.X, nextPoint.X) : (nextPoint.X, point.X);
-                    
-                    for (var x = startX; x <= endX; x++)
-                    {
-                        grid[x, y] = State.Rock;
-                    }
-                }
-                else
-                {
-                    throw new Exception("diagonals! are you crazy?");
-                }
+                DrawLine(grid, point, nextPoint);
             }
         }
 
         return grid;
     }
 
-    private (Grid<State>, DropSandResult) DropSand(Grid<State> grid, Position source)
+    private static void DrawLine(Grid<State> grid, Position point, Position nextPoint)
+    {
+        if (point.X == nextPoint.X)
+        {
+            var x = point.X;
+            var (startY, endY) = point.Y < nextPoint.Y ? (point.Y, nextPoint.Y) : (nextPoint.Y, point.Y);
+
+            for (var y = startY; y <= endY; y++)
+            {
+                grid[x, y] = State.Rock;
+            }
+        }
+        else if (point.Y == nextPoint.Y)
+        {
+            var y = point.Y;
+            var (startX, endX) = point.X < nextPoint.X ? (point.X, nextPoint.X) : (nextPoint.X, point.X);
+
+            for (var x = startX; x <= endX; x++)
+            {
+                grid[x, y] = State.Rock;
+            }
+        }
+        else
+        {
+            throw new Exception("diagonals! are you crazy?");
+        }
+    }
+
+    private static (Grid<State>, DropSandResult) DropSand(Grid<State> grid, Position source)
     {
         var sand = source;
 
         var down = new Position(0, 1);
         var downLeft = new Position(-1, 1);
         var downRight = new Position(1, 1);
-
-        while (true)
+        var deltas = new [] { down, downLeft, downRight };
+  
+        start_again:
+        foreach (var delta in deltas)
         {
-            var sandDown = sand + down;
-            if (!grid.IsValid(sandDown))
+            var result = TryDropSandByDelta(grid, ref sand, delta);
+            switch (result)
             {
-                return (grid, DropSandResult.SacrificedToTheInfiniteVoid);
+                case DropSandResult.Continue: goto start_again;
+                case DropSandResult.Rest: break;
+                default: return (grid, result);
             }
-
-            if (grid[sandDown] == State.Air)
-            {
-                sand = sandDown;
-                continue;
-            }
-
-            var sandDownLeft = sand + downLeft;
-            if (!grid.IsValid(sandDownLeft))
-            {
-                return (grid, DropSandResult.SacrificedToTheInfiniteVoid);
-            }
-
-            if (grid[sandDownLeft] == State.Air)
-            {
-                sand = sandDownLeft;
-                continue;
-            }
-
-            var sandDownRight = sand + downRight;
-            if (!grid.IsValid(sandDownRight))
-            {
-                return (grid, DropSandResult.SacrificedToTheInfiniteVoid);
-            }
-
-            if (grid[sandDownRight] == State.Air)
-            {
-                sand = sandDownRight;
-                continue;
-            }
-
-            if (sand == source)
-            {
-                return (grid, DropSandResult.ReachedTheSourceWhichIsGoodAndIDontDie);
-            }
-
-            grid[sand] = State.Sand;
-            break;
         }
 
+        if (sand == source) {
+            return (grid, DropSandResult.ReachedTheSourceWhichIsGoodAndIDontDie);
+        }
+        
+        grid[sand] = State.Sand;
         return (grid, DropSandResult.Rest);
     }
+    
+    private static DropSandResult TryDropSandByDelta(Grid<State> grid, ref Position sand, Position delta)
+    {
+        var newSand = sand + delta;
+        if (!grid.IsValid(newSand))
+        {
+            return DropSandResult.SacrificedToTheInfiniteVoid;
+        }
+
+        if (grid[newSand] != State.Air)
+        {
+            return DropSandResult.Rest;
+        }
+            
+        sand = newSand;
+        return DropSandResult.Continue;
+    }
+
     
     private enum State
     {
@@ -213,6 +207,7 @@ public partial class Day14 : ParseDay<Day14.Input, int, int>
 
     private enum DropSandResult
     {
+        Continue = 0,
         Rest,
         SacrificedToTheInfiniteVoid,
         ReachedTheSourceWhichIsGoodAndIDontDie,
