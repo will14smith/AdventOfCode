@@ -1,5 +1,4 @@
-using System.Collections;
-using System.Collections.Immutable;
+using System.Collections.Concurrent;
 using Superpower;
 using Superpower.Parsers;
 
@@ -23,76 +22,116 @@ public partial class Day16 : ParseLineDay<Day16.Input, int, int>
     {
         var inputList = input.ToList();
         var graph = BuildGraph(inputList);
-        
-        var search = new PriorityQueue<State, int>();
-        search.Enqueue(new State("AA", 29, 0, ImmutableHashSet<string>.Empty), 0);
 
-        var maxState = search.Peek();
-        
-        while (search.Count > 0)
-        {
-            var state = search.Dequeue();
-            if (state.PressureReleased > maxState.PressureReleased)
-            {
-                maxState = state;
-            }
-            
-            foreach (var next in Next(graph, state))
-            {
-                if (next.TimeLeft <= 0)
-                {
-                    continue;
-                }
-                
-                search.Enqueue(next, -next.PressureReleased);
-            }
-        }
-
-        return maxState.PressureReleased; 
+        var initialState = new State(graph.Nodes["AA"], 30, 0, new NodeFlags(0));
+        return DFS(graph, initialState);
     }
     
     [Sample(Sample, 1707)]
     protected override int Part2(IEnumerable<Input> input)
     {
-        throw new NotImplementedException();
-    }
+        var inputList = input.ToList();
+        var graph = BuildGraph(inputList);
+        
+        var initialState = new State(graph.Nodes["AA"], 26, 0, new NodeFlags(0));
 
-    private static IEnumerable<State> Next(Graph graph, State state)
-    {
-        foreach (var destination in ValidDestinations(graph, state))
+        var nodesWithFlow = graph.Flow.Select(x => x.Node).ToList();
+        var nodeCombinations = Combinations.Get(nodesWithFlow).Select(ToIndex);
+        
+        var subgraphScores = new ConcurrentBag<(NodeFlags, int)>();
+        nodeCombinations.AsParallel().ForAll(x => subgraphScores.Add((x, DFS(graph, initialState with { Open = new NodeFlags(~x.Nodes) }))));
+        
+        var orderedSubgraphScores = subgraphScores.OrderByDescending(x => x.Item2).ToList();
+        
+        var best = 0;
+        foreach (var x in orderedSubgraphScores)
         {
-            var distanceToDestination = graph.Distances[(state.Location, destination)];
-            var timeRemaining = state.TimeLeft - distanceToDestination;
-
-            var gain = ExpectedGain(graph, destination, timeRemaining);
-
-            yield return new State(destination, timeRemaining - 1, state.PressureReleased + gain,
-                state.Open.Add(destination));
+            foreach (var y in orderedSubgraphScores)
+            {
+                var maybe = x.Item2 + y.Item2;
+                if (maybe < best)
+                {
+                    break;
+                }
+        
+                if (maybe > best && (x.Item1.Nodes & y.Item1.Nodes) == 0)
+                {
+                    best = maybe;
+                }
+            }
         }
+        
+        return best;
     }
 
-    private static IEnumerable<string> ValidDestinations(Graph graph, State state) => graph.Nodes.Where(x => x.Value > 0 && !state.Open.Contains(x.Key)).Select(x => x.Key);
-    private static int ExpectedGain(Graph graph, string target, int timeRemaining) => graph.Nodes[target] * timeRemaining;
+    private static NodeFlags ToIndex(IEnumerable<int> nodes)
+    {
+        var flags = 0L;
+
+        foreach (var node in nodes)
+        {
+            flags |= 1L << node;
+        }
+        
+        return new NodeFlags(flags);
+    }
+    
+    private static int DFS(Graph graph, State state)
+    {
+        var max = state.PressureReleased;
+
+        for (var i = 0; i < graph.Flow.Length; i++)
+        {
+            var (index, flow) = graph.Flow[i];
+            var nodeMask = 1L << index;
+
+            if ((state.Open.Nodes & nodeMask) != 0)
+            {
+                continue;
+            }
+
+            var distanceToDestination = graph.Distances[state.Location, index];
+            var timeRemaining = state.TimeLeft - distanceToDestination - 1;
+
+            if (timeRemaining <= 0)
+            {
+                continue;
+            }
+
+            var gain = flow * timeRemaining;
+
+            var dfs = DFS(graph,
+                new State(index, timeRemaining, state.PressureReleased + gain,
+                    new NodeFlags(state.Open.Nodes | nodeMask)));
+            max = Math.Max(max, dfs);
+        }
+
+        return max;
+    }
 
     private static Graph BuildGraph(IReadOnlyCollection<Input> input)
     {
-        var nodes = input.ToDictionary(x => x.Name, x => x.FlowRate);
+        var names = input.Select((x, i) => (Key: i, x.Name)).ToDictionary(x => x.Key, x => x.Name);
+        var ids = input.Select((x, i) => (Key: i, x.Name)).ToDictionary(x => x.Name, x => x.Key);
+        
+        var flow = input.Where(x => x.FlowRate > 0).Select(x => (ids[x.Name], x.FlowRate)).ToArray();
+        
         var edges = input.ToDictionary(x => x.Name, x => x.LeadsTo);
 
-        var distances = new Dictionary<(string, string), int>();
+        var numberOfNodes = names.Count;
+
+        var distances = new int[numberOfNodes, numberOfNodes];
+        FillToInfinity(distances);
         
-        foreach (var (node, _) in nodes)
+        foreach (var (node, id) in ids)
         {
             foreach (var edge in edges[node])
             {
-                distances[(node, edge)] = 1;
+                distances[id, ids[edge]] = 1;
             }
 
-            distances[(node, node)] = 0;
+            distances[id, id] = 0;
         }
-
-        var numberOfNodes = nodes.Count;
-        var nodesNames = nodes.Keys.ToArray(); 
         
         for (var k = 0; k < numberOfNodes; k++)
         {
@@ -100,23 +139,33 @@ public partial class Day16 : ParseLineDay<Day16.Input, int, int>
             {
                 for (var j = 0; j < numberOfNodes; j++)
                 {
-                    var distIJ = distances.TryGetValue((nodesNames[i], nodesNames[j]), out var a) ? a : int.MaxValue;
-                    var distIK = distances.TryGetValue((nodesNames[i], nodesNames[k]), out var b) ? b : int.MaxValue;
-                    var distKJ = distances.TryGetValue((nodesNames[k], nodesNames[j]), out var c) ? c : int.MaxValue;
+                    var distIJ = distances[i, j];
+                    var distIK = distances[i, k];
+                    var distKJ = distances[k, j];
 
                     var indirect = distIK == int.MaxValue || distKJ == int.MaxValue ? int.MaxValue : distIK + distKJ;
                     if (indirect != int.MaxValue && distIJ > indirect)
                     {
-                        distances[(nodesNames[i], nodesNames[j])] = indirect;
+                        distances[i, j] = indirect;
                     }
                 }
             }
         }
-        
-        return new Graph(nodes, edges, distances);
+
+        return new Graph(ids, flow, distances);
     }
     
+    private static unsafe void FillToInfinity(int[,] distances)
+    {
+        fixed (int* p = &distances[0, 0])
+        {
+            new Span<int>(p, distances.Length).Fill(int.MaxValue);
+        }
+    }
+
     public record Input(string Name, int FlowRate, IReadOnlyList<string> LeadsTo);
-    public record Graph(IReadOnlyDictionary<string, int> Nodes, IReadOnlyDictionary<string, IReadOnlyList<string>> Edges, IReadOnlyDictionary<(string, string), int> Distances);
-    public record State(string Location, int TimeLeft, int PressureReleased, ImmutableHashSet<string> Open);
+    public record Graph(IReadOnlyDictionary<string, int> Nodes, (int Node, int Flow)[] Flow, int[,] Distances);
+    public record State(int Location, int TimeLeft, int PressureReleased, NodeFlags Open);
+    
+    public record NodeFlags(long Nodes);
 }
