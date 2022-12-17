@@ -39,18 +39,28 @@ public partial class Day15 : ParseLineDay<Day15.Input, long, long>
         var inputList = input.ToList();
         var searchSize = inputList.First().Sensor.X == 2 ? 20 : 4000000;
 
-        for (var y = 0; y <= searchSize; y++)
+        var result = Parallel.For(0, searchSize + 1, (y, state) =>
         {
             var coverage = GetCoverage(inputList, y);
             var range = coverage.Ranges.FirstOrDefault(r => r.Start > 0 && r.Start <= searchSize);
                 
             if(range != null)
             {
-                return (range.Start - 1) * 4000000L + y;
+                state.Break();
+                // (range.Start - 1) * 4000000L + y;
             }
+        });
+
+        if (!result.LowestBreakIteration.HasValue)
+        {
+            throw new Exception("no solution");
         }
-        
-        throw new Exception("no solution");
+
+        var resultY = (int)result.LowestBreakIteration;
+        var coverage = GetCoverage(inputList, resultY);
+        var range = coverage.Ranges.First(r => r.Start > 0 && r.Start <= searchSize);
+
+        return (range.Start - 1) * 4000000L + resultY;
     }
 
     private static Coverage GetCoverage(IEnumerable<Input> input, int y)
