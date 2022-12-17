@@ -32,7 +32,7 @@ public abstract class Day<TModel, TResult1, TResult2> : Day
         foreach (var (input, expected) in Tests1)
         {
             var actual = Run($"Test.{i++} Day{DayNumber}.1", input, Part1);
-            actual.Should().Be(expected, $"{input} was expecting {expected} but was actually {actual}");
+            actual.Should().Be(expected, $"{input}");
         }
     }
 
@@ -43,7 +43,7 @@ public abstract class Day<TModel, TResult1, TResult2> : Day
         foreach (var (input, expected) in Tests2)
         {
             var actual = Run($"Test.{i++} Day{DayNumber}.2", input, Part2);
-            actual.Should().Be(expected, $"{input} was expecting {expected} but was actually {actual}");
+            actual.Should().Be(expected, $"{input}");
         }
     }
 
