@@ -40,4 +40,6 @@ public static class ArrayExtensions
 
     public static string Join<T>(this IEnumerable<T> input) => string.Join("", input);
     public static string Join<T>(this IEnumerable<T> input, string sep) => string.Join(sep, input);
+
+    public static IReadOnlyDictionary<T, int> ToFrequency<T>(this IEnumerable<T> input) where T : notnull => input.GroupBy(x => x).ToDictionary(x => x.Key, x => x.Count());
 }
