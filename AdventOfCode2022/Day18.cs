@@ -1,7 +1,7 @@
 namespace AdventOfCode2022;
 
 [Day]
-public partial class Day18 : LineDay<Day18.Position3, int, int>
+public partial class Day18 : LineDay<Position3, int, int>
 {
     private const string Sample = "2,2,2\n1,2,2\n3,2,2\n2,1,2\n2,3,2\n2,2,1\n2,2,3\n2,2,4\n2,2,6\n1,2,5\n3,2,5\n2,1,5\n2,3,5";
     
@@ -15,55 +15,31 @@ public partial class Day18 : LineDay<Day18.Position3, int, int>
     protected override int Part1(IEnumerable<Position3> input)
     {
         var cubes = input.ToHashSet();
-
-        var deltas = new[]
-        {
-            new Position3(1, 0, 0),
-            new Position3(-1, 0, 0),
-            new Position3(0, 1, 0),
-            new Position3(0, -1, 0),
-            new Position3(0, 0, 1),
-            new Position3(0, 0, -1),
-        };
         
-        var faces = 0;
-        foreach (var cube in cubes)
-        {
-            foreach (var delta in deltas)
-            {
-                if (!cubes.Contains(cube + delta))
-                {
-                    faces++;
-                }
-            }
-        }
-
-        return faces;
+        return cubes.Sum(cube => cube.OrthogonalNeighbours().Count(neighbour => !cubes.Contains(neighbour)));
     }
 
     [Sample(Sample, 58)]
     protected override int Part2(IEnumerable<Position3> input)
     {
         var cubes = input.ToHashSet();
-        var bounds = CalculateBounds(cubes);
-        var tl = bounds.TL + new Position3(-1, -1, -1);
-        var br = bounds.BR + new Position3(1, 1, 1);
-
-        var deltas = new[]
-        {
-            new Position3(1, 0, 0),
-            new Position3(-1, 0, 0),
-            new Position3(0, 1, 0),
-            new Position3(0, -1, 0),
-            new Position3(0, 0, 1),
-            new Position3(0, 0, -1),
-        };
-
-        var frontier = new Queue<Position3>();
-        frontier.Enqueue(tl);
         
+        // create a region with a 1-wide border to allow flood fill to wrap around fully
+        var bounds = CalculateBounds(cubes);
+        var region = (bounds.TL + new Position3(-1, -1, -1), bounds.BR + new Position3(1, 1, 1));
+        
+        var surroundingWater = FloodFillRegion(region, cubes);
+
+        return cubes.Sum(cube => cube.OrthogonalNeighbours().Count(neighbour => surroundingWater.Contains(neighbour)));
+    }
+
+    private static HashSet<Position3> FloodFillRegion((Position3 TL, Position3 BR) region, IReadOnlySet<Position3> cubes)
+    {
         var filled = new HashSet<Position3>();
 
+        var frontier = new Queue<Position3>();
+        frontier.Enqueue(region.TL);
+        
         while (frontier.Count > 0)
         {
             var pos = frontier.Dequeue();
@@ -71,72 +47,34 @@ public partial class Day18 : LineDay<Day18.Position3, int, int>
             {
                 continue;
             }
-            
-            foreach (var delta in deltas)
+
+            foreach (var next in pos.OrthogonalNeighbours())
             {
-                var next = pos + delta;
-                if (!InRegion((tl, br), next))
+                if (!InRegion(region, next) || cubes.Contains(next))
                 {
                     continue;
                 }
 
-                if (!cubes.Contains(next))
-                {
-                    frontier.Enqueue(next);
-                } 
+                frontier.Enqueue(next);
             }
         }
 
-        var faces = 0;
-        foreach (var cube in cubes)
-        {
-            foreach (var delta in deltas)
-            {
-                if (filled.Contains(cube + delta))
-                {
-                    faces++;
-                }
-            }
-        }
-
-        return faces;
+        return filled;
     }
-    
-    private (Position3 TL, Position3 BR) CalculateBounds(HashSet<Position3> cubes)
-    {
-        int minX = int.MaxValue, minY = int.MaxValue, minZ = int.MaxValue;
-        int maxX = int.MinValue, maxY = int.MinValue, maxZ = int.MinValue;
 
-        foreach (var cube in cubes)
-        {
-            minX = Math.Min(minX, cube.X);
-            minY = Math.Min(minY, cube.Y);
-            minZ = Math.Min(minZ, cube.Z);
-            
-            maxX = Math.Max(maxX, cube.X);
-            maxY = Math.Max(maxY, cube.Y);
-            maxZ = Math.Max(maxZ, cube.Z);
-        }
-
-        return (new Position3(minX, minY, minZ), new Position3(maxX, maxY, maxZ));
-    }
-    
-    private bool InRegion((Position3 TL, Position3 BR) region, Position3 pos)
+    private static (Position3 TL, Position3 BR) CalculateBounds(HashSet<Position3> cubes)
     {
-        if (pos.X < region.TL.X) return false;
-        if (pos.Y < region.TL.Y) return false;
-        if (pos.Z < region.TL.Z) return false;
+        var min = Position3.MaxValue;
+        var max = Position3.MinValue;
         
-        if (pos.X > region.BR.X) return false;
-        if (pos.Y > region.BR.Y) return false;
-        if (pos.Z > region.BR.Z) return false;
+        foreach (var cube in cubes)
+        {
+            min = Position3.Min(min, cube);
+            max = Position3.Max(max, cube);
+        }
 
-        return true;
+        return (min, max);
     }
-
-
-    public record Position3(int X, int Y, int Z)
-    {
-        public static Position3 operator +(Position3 a, Position3 b) => new(a.X + b.X, a.Y + b.Y, a.Z + b.Z);
-    }
+    
+    private static bool InRegion((Position3 TL, Position3 BR) region, Position3 pos) => !(pos < region.TL) && !(pos > region.BR);
 }
