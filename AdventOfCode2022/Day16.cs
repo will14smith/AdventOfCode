@@ -78,20 +78,27 @@ public partial class Day16 : ParseLineDay<Day16.Input, int, int>
     
     private static int DFS(Graph graph, State state)
     {
-        var max = state.PressureReleased;
+        var current = state.PressureReleased;
+        var max = current;
 
-        for (var i = 0; i < graph.Flow.Length; i++)
+        var currentLocation = state.Location;
+        var distances = graph.Distances;
+        var flows = graph.Flow;
+        var openNodes = state.Open.Nodes;
+        var timeLeft = state.TimeLeft;
+
+        for (var i = 0; i < flows.Length; i++)
         {
-            var (index, flow) = graph.Flow[i];
+            var (index, flow) = flows[i];
             var nodeMask = 1L << index;
 
-            if ((state.Open.Nodes & nodeMask) != 0)
+            if ((openNodes & nodeMask) != 0)
             {
                 continue;
             }
 
-            var distanceToDestination = graph.Distances[state.Location, index];
-            var timeRemaining = state.TimeLeft - distanceToDestination - 1;
+            var distanceToDestination = distances[currentLocation, index];
+            var timeRemaining = timeLeft - distanceToDestination - 1;
 
             if (timeRemaining <= 0)
             {
@@ -100,9 +107,7 @@ public partial class Day16 : ParseLineDay<Day16.Input, int, int>
 
             var gain = flow * timeRemaining;
 
-            var dfs = DFS(graph,
-                new State(index, timeRemaining, state.PressureReleased + gain,
-                    new NodeFlags(state.Open.Nodes | nodeMask)));
+            var dfs = DFS(graph, new State(index, timeRemaining, current + gain, new NodeFlags(openNodes | nodeMask)));
             max = Math.Max(max, dfs);
         }
 
