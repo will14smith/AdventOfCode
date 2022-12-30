@@ -46,31 +46,12 @@ public partial class Day14 : Day<Day14.Model, int, int>
     {
         var inputBytes = Encoding.ASCII.GetBytes(inputString);
         
-        var ascii128 = Vector128.Create((byte) '0', (byte) '1', (byte) '2', (byte) '3', (byte) '4', (byte) '5', (byte) '6', (byte) '7', (byte) '8', (byte) '9', (byte) 'a', (byte) 'b', (byte) 'c', (byte) 'd', (byte) 'e', (byte) 'f');
-        var ascii = Vector256.Create(ascii128, ascii128);
-
-        var spreadMaskUpper = Vector256.Create(0, 0xFF, 1, 0xFF, 2, 0xFF, 3, 0xFF, 4, 0xFF, 5, 0xFF, 6, 0xFF, 7, 0xFF, 8, 0xFF, 9, 0xFF, 10, 0xFF, 11, 0xFF, 12, 0xFF, 13, 0xFF, 14, 0xFF, 15, 0xFF).AsByte();
-        var spreadMaskLower = Vector256.Create(0xFF, 0, 0xFF, 1, 0xFF, 2, 0xFF, 3, 0xFF, 4, 0xFF, 5, 0xFF, 6, 0xFF, 7, 0xFF, 8, 0xFF, 9, 0xFF, 10, 0xFF, 11, 0xFF, 12, 0xFF, 13, 0xFF, 14, 0xFF, 15).AsByte();
-        
-        var lowerMask = Vector256.Create((byte)0xF);
-        
         var hashBytes = md5.ComputeHash(inputBytes);
-        var hexBuffer2 = new byte[32];
+        var hexBuffer = new byte[32];
         for (var x = 0; x < 2016; x++)
         {
-            var hashVector128 = Vector128.Create(hashBytes);
-            var hashVector = Vector256.Create(hashVector128, hashVector128);
-            var hashVectorUpper = Avx2.Shuffle(hashVector, spreadMaskUpper);
-            var hashVectorLower = Avx2.Shuffle(hashVector, spreadMaskLower);
-
-            hashVectorUpper = Avx2.ShiftRightLogical(hashVectorUpper.AsInt16(), 4).AsByte();
-            hashVectorLower = Avx2.And(hashVectorLower, lowerMask);
-            hashVector = Avx2.Or(hashVectorUpper, hashVectorLower);
-            
-            var hexVector = Avx2.Shuffle(ascii, hashVector);
-            hexVector.CopyTo(hexBuffer2);
-            
-            hashBytes = md5.ComputeHash(hexBuffer2);
+            HexExtensions.Bytes16ToHex32(hashBytes, hexBuffer);
+            hashBytes = md5.ComputeHash(hexBuffer);
         }
         
         return Convert.ToHexString(hashBytes);
