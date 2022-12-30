@@ -62,7 +62,7 @@ public partial class Day12 : Day<Day12.Model, int, int>
     [Sample(Sample, 29)]
     protected override int Part2(Model input)
     {
-        return OptimisedSearch.Solve((Current: input.End, Distance: 0), 0, IsGoal, Next, x => false, x => x.Distance).Distance;
+        return OptimisedSearch.Solve((Current: input.End, Distance: 0), IsGoal, Next, x => false, x => x.Current, x => x.Distance).Distance;
         
         bool IsGoal((Position Current, int Distance) x) => input.Map[x.Current] == 0;
         IEnumerable<(Position Current, int Distance)> Next((Position Current, int Distance) x) => 

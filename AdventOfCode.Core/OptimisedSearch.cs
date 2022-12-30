@@ -2,17 +2,17 @@
 
 public static class OptimisedSearch
 {
-    public static TItem Solve<TItem, TPriority>(TItem initialItem, TPriority initialPriority, Search<TItem, TPriority> search)
+    public static TItem Solve<TItem, THash, TPriority>(TItem initialItem, Search<TItem, THash, TPriority> search)
     {
-        return Solve(initialItem, initialPriority, search.IsGoal, search.Next, search.ShouldSkip, search.GetPriority);
+        return Solve(initialItem, search.IsGoal, search.Next, search.ShouldSkip, search.GetHash, search.GetPriority);
     }
     
-    public static TItem Solve<TItem, TPriority>(TItem initialItem, TPriority initialPriority, Func<TItem, bool> isGoal, Func<TItem, IEnumerable<TItem>> next, Func<TItem, bool> shouldSkip, Func<TItem, TPriority> getPriority)
+    public static TItem Solve<TItem, THash, TPriority>(TItem initialItem, Func<TItem, bool> isGoal, Func<TItem, IEnumerable<TItem>> next, Func<TItem, bool> shouldSkip, Func<TItem, THash> getHash, Func<TItem, TPriority> getPriority)
     {
         var states = new PriorityQueue<TItem, TPriority>();
-        states.Enqueue(initialItem, initialPriority);
+        states.Enqueue(initialItem, getPriority(initialItem));
 
-        var visited = new HashSet<TItem>();
+        var visited = new HashSet<THash>();
 
         while (states.Count > 0)
         {
@@ -30,7 +30,7 @@ public static class OptimisedSearch
                     continue;
                 }
 
-                if (visited.Add(nextItem))
+                if (visited.Add(getHash(nextItem)))
                 {
                     states.Enqueue(nextItem, getPriority(nextItem));
                 }
@@ -40,16 +40,18 @@ public static class OptimisedSearch
         throw new Exception("solution not found");
     }
 
-    public abstract class Search<TItem, TPriority>
+    public abstract class Search<TItem, THash, TPriority>
     {
         public abstract IEnumerable<TItem> Next(TItem item);
+        public abstract THash GetHash(TItem item);
         public abstract TPriority GetPriority(TItem item);
 
         public abstract bool IsGoal(TItem item);
         public abstract bool ShouldSkip(TItem item);
     }
     
-    public abstract class Search<TItem> : Search<TItem, int>
+    public abstract class Search<TItem> : Search<TItem, TItem, int>
     {
+        public override TItem GetHash(TItem item) => item;
     }
 }

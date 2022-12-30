@@ -21,13 +21,14 @@ public partial class Day22 : ParseDay<Day22.Boss, int, int>
         var player = new Player(50, 500, 0);
         var initial = new Game(hardMode, player, input, State.PlayerTurn, new Effects(0, 0, 0));
 
-        return OptimisedSearch.Solve(initial, 0, new Search()).Player.ManaSpend;
+        return OptimisedSearch.Solve(initial, new Search()).Player.ManaSpend;
     }
 
-    private class Search : OptimisedSearch.Search<Game, int>
+    private class Search : OptimisedSearch.Search<Game, Game, int>
     {
         public override IEnumerable<Game> Next(Game item) => PlayAllTurn(item);
         
+        public override Game GetHash(Game item) => item;
         public override int GetPriority(Game item) => item.Player.ManaSpend;
 
         public override bool IsGoal(Game item) => item.State == State.PlayerWon;
