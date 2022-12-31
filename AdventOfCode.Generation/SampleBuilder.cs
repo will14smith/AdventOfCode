@@ -46,8 +46,17 @@ public static class SampleBuilder
             if (attribute.ConstructorArguments[1].Type?.Name == "Int64")
             {
                 value += "L";
+            } 
+            else if (attribute.ConstructorArguments[1].Type?.Name == "UInt32")
+            {
+                value += "U";
             }
-            
+            else if (attribute.ConstructorArguments[1].Type?.Name == "UInt64")
+            {
+                value += "UL";
+            }
+
+
             samples.Add(new Sample(input, value));
         }
         
