@@ -3,7 +3,7 @@ using System.Runtime.Intrinsics.X86;
 
 namespace AdventOfCode.Core;
 
-public class HexExtensions
+public static class HexExtensions
 {
     private static readonly Vector256<byte> Ascii;
     private static readonly Vector256<byte> ShuffleMaskLower;
