@@ -42,4 +42,10 @@ public static class ArrayExtensions
     public static string Join<T>(this IEnumerable<T> input, string sep) => string.Join(sep, input);
 
     public static IReadOnlyDictionary<T, int> ToFrequency<T>(this IEnumerable<T> input) where T : notnull => input.GroupBy(x => x).ToDictionary(x => x.Key, x => x.Count());
+
+    public static void SplitAt<T>(this ReadOnlySpan<T> input, int pivot, out ReadOnlySpan<T> startExclusive, out ReadOnlySpan<T> endInclusive)
+    {
+        startExclusive = input[..pivot];
+        endInclusive = input[pivot..];
+    }
 }
