@@ -1,13 +1,12 @@
-﻿namespace AdventOfCode2023;
+﻿using Superpower;
+using Superpower.Parsers;
+
+namespace AdventOfCode2023;
 
 [Day]
-public partial class Day07 : LineDay<Day07.Model, int, int>
+public partial class Day07 : ParseLineDay<Day07.Model, int, int>
 {
-    protected override Model ParseLine(string input)
-    {
-        var parts = input.Split(' ');
-        return new Model(parts[0], int.Parse(parts[1]));
-    }
+    protected override TextParser<Model> LineParser { get; } = Span.NonWhiteSpace.ThenIgnore(Span.WhiteSpace).Then(Numerics.IntegerInt32).Select(x => new Model(x.Item1.ToStringValue(), x.Item2));
     
     [Sample("32T3K 765\nT55J5 684\nKK677 28\nKTJJT 220\nQQQJA 483", 6440)]
     protected override int Part1(IEnumerable<Model> input) => Solve(input, RankingComparerPart1.Instance);
