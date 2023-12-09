@@ -26,7 +26,6 @@ public partial class Day09 : LineDay<Day09.Model, long, long>
 
         return result;
     }
-
     
     private static IReadOnlyList<long> GetDeltas(IReadOnlyList<long> input)
     {
