@@ -1,9 +1,11 @@
+using AdventOfCode2019.IntCode;
+
 namespace AdventOfCode2019;
 
 [Day]
 public partial class Day02 : Day<Day02.Model, int, int>
 {
-    protected override Model Parse(string input) => new(input.Split(',').Select(int.Parse).ToArray());
+    protected override Model Parse(string input) => new(Evaluator.Parse(input));
 
     [Sample("1,9,10,3,2,3,11,0,99,30,40,50", 3500)]
     [Sample("1,0,0,0,99", 2)]
@@ -39,33 +41,7 @@ public partial class Day02 : Day<Day02.Model, int, int>
         throw new Exception("no.");
     }
 
-    private static int Run(int[] memory)
-    {
-        var ip = 0;
-        while (true)
-        {
-            switch (memory[ip])
-            {
-                case 1:
-                {
-                    memory[memory[ip + 3]] = memory[memory[ip + 1]] + memory[memory[ip + 2]];
-                    ip += 4;
-                    break;
-                }
-                case 2:    
-                {
-                    memory[memory[ip + 3]] = memory[memory[ip + 1]] * memory[memory[ip + 2]];
-                    ip += 4;
-                    break;
-                }
+    private static int Run(IReadOnlyList<int> memory) => new Evaluator(memory).Run().State.Memory.Span[0];
 
-                
-                case 99: return memory[0];
-                
-                default: throw new NotImplementedException($"unhandled opcode: {memory[ip]}");
-            }
-        }
-    }
-    
     public record Model(IReadOnlyList<int> InitialMemory);
 }
