@@ -3,15 +3,15 @@ using AdventOfCode2019.IntCode;
 namespace AdventOfCode2019;
 
 [Day]
-public partial class Day02 : Day<Day02.Model, int, int>
+public partial class Day02 : Day<Day02.Model, long, long>
 {
     protected override Model Parse(string input) => new(Evaluator.Parse(input));
 
-    [Sample("1,9,10,3,2,3,11,0,99,30,40,50", 3500)]
-    [Sample("1,0,0,0,99", 2)]
-    [Sample("2,5,0,0,99,3", 6)]
-    [Sample("2,4,4,0,99,0", 9801)]
-    protected override int Part1(Model input)
+    [Sample("1,9,10,3,2,3,11,0,99,30,40,50", 3500L)]
+    [Sample("1,0,0,0,99", 2L)]
+    [Sample("2,5,0,0,99,3", 6L)]
+    [Sample("2,4,4,0,99,0", 9801L)]
+    protected override long Part1(Model input)
     {
         var memory = input.InitialMemory.ToArray();
 
@@ -25,7 +25,7 @@ public partial class Day02 : Day<Day02.Model, int, int>
         return Run(memory);
     }
     
-    protected override int Part2(Model input)
+    protected override long Part2(Model input)
     {
         for(var noun = 0; noun < 100; noun++)
         for (var verb = 0; verb < 100; verb++)
@@ -41,7 +41,7 @@ public partial class Day02 : Day<Day02.Model, int, int>
         throw new Exception("no.");
     }
 
-    private static int Run(IReadOnlyList<int> memory) => new Evaluator(memory).Run().State.Memory.Span[0];
+    private static long Run(IReadOnlyList<long> memory) => new Evaluator(memory).Run().State.Memory[0];
 
-    public record Model(IReadOnlyList<int> InitialMemory);
+    public record Model(IReadOnlyList<long> InitialMemory);
 }

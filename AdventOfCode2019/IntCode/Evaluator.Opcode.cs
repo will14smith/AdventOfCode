@@ -8,7 +8,7 @@ public partial class Evaluator
         ParameterMode ParameterMode2,
         ParameterMode ParameterMode3)
     {
-        public static Opcode Read(int value)
+        public static Opcode Read(long value)
         {
             (value, var operation) = Math.DivRem(value, 100);
             (value, var param1) = Math.DivRem(value, 10);
@@ -36,13 +36,16 @@ public partial class Evaluator
         JumpIfFalse = 6,
         LessThan = 7,
         Equals = 8,
+        
+        AddRelativeBase = 9,
 
         Halt = 99,
     }
 
     public enum ParameterMode
     {
-        PositionMode = 0,
-        ImmediateMode = 1,
+        Position = 0,
+        Immediate = 1,
+        Relative = 2,
     }
 }

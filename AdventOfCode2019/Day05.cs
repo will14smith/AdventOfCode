@@ -3,15 +3,15 @@ using AdventOfCode2019.IntCode;
 namespace AdventOfCode2019;
 
 [Day]
-public partial class Day05 : Day<Day05.Model, int, int>
+public partial class Day05 : Day<Day05.Model, long, long>
 {
     protected override Model Parse(string input) => new(Evaluator.Parse(input));
 
-    protected override int Part1(Model input)
+    protected override long Part1(Model input)
     {
         var eval = new Evaluator(input.InitialMemory);
 
-        var lastOutput = 0;
+        var lastOutput = 0L;
         
         Evaluator.State? state = null;
         while (true)
@@ -30,11 +30,11 @@ public partial class Day05 : Day<Day05.Model, int, int>
         }
     }
     
-    protected override int Part2(Model input)
+    protected override long Part2(Model input)
     {
         var eval = new Evaluator(input.InitialMemory);
 
-        var lastOutput = 0;
+        var lastOutput = 0L;
         
         Evaluator.State? state = null;
         while (true)
@@ -53,5 +53,5 @@ public partial class Day05 : Day<Day05.Model, int, int>
         }
     }
 
-    public record Model(IReadOnlyList<int> InitialMemory);
+    public record Model(IReadOnlyList<long> InitialMemory);
 }
