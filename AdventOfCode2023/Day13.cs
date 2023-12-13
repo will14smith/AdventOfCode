@@ -8,12 +8,12 @@ public partial class Day13 : Day<Day13.Model, int, int>
     protected override Model Parse(string input) => new (input.Split("\n\n").Select(pattern => GridParser.ParseBool(pattern, '#')).ToArray());
 
     [Sample("#.##..##.\n..#.##.#.\n##......#\n##......#\n..#.##.#.\n..##..##.\n#.#.##.#.\n\n#...##..#\n#....#..#\n..##..###\n#####.##.\n#####.##.\n..##..###\n#....#..#", 405)]
-    protected override int Part1(Model input) => input.Patterns.Select(FindMirrors).Select(x => x.Single()).Sum(x => x.Vertical ? x.Position : 100 * x.Position);
+    protected override int Part1(Model input) => input.Patterns.Select(x => FindMirrors(x, 0)).Select(x => x.First()).Sum(x => x.Vertical ? x.Position : 100 * x.Position);
 
     [Sample("#.##..##.\n..#.##.#.\n##......#\n##......#\n..#.##.#.\n..##..##.\n#.#.##.#.\n\n#...##..#\n#....#..#\n..##..###\n#####.##.\n#####.##.\n..##..###\n#....#..#", 400)]
-    protected override int Part2(Model input) => input.Patterns.Select(FindDifferentMirrorsWithSmudge).Select(x => x.First()).Sum(x => x.Vertical ? x.Position : 100 * x.Position);
+    protected override int Part2(Model input) => input.Patterns.Select(x => FindMirrors(x, 1)).Select(x => x.First()).Sum(x => x.Vertical ? x.Position : 100 * x.Position);
 
-    private static IEnumerable<(bool Vertical, int Position)> FindMirrors(Grid<bool> pattern)
+    private static IEnumerable<(bool Vertical, int Position)> FindMirrors(Grid<bool> pattern, int expectedDifferences)
     {
         var columns = ExtractColumns(pattern);
         for (var x = 1; x < pattern.Width; x++)
@@ -24,7 +24,12 @@ public partial class Day13 : Day<Day13.Model, int, int>
             var columnsR = columns[x..(x + size)];
 
             columnsL.Reverse();
-            if (columnsL.SequenceEqual(columnsR)) yield return (true, x);
+
+            var l = string.Join("", columnsL);
+            var r = string.Join("", columnsR);
+
+            var differences = l.Zip(r).Sum(z => z.First == z.Second ? 0 : 1);
+            if (differences == expectedDifferences) yield return (true, x);
         }
         
         var rows = ExtractRows(pattern);
@@ -36,10 +41,14 @@ public partial class Day13 : Day<Day13.Model, int, int>
             var rowsD = rows[y..(y + size)];
 
             rowsU.Reverse();
-            if (rowsU.SequenceEqual(rowsD)) yield return (false, y);
+            
+            var u = string.Join("", rowsU);
+            var d = string.Join("", rowsD);
+
+            var differences = u.Zip(d).Sum(z => z.First == z.Second ? 0 : 1);
+            if (differences == expectedDifferences) yield return (false, y);
         }
     }
-
 
     private static List<string> ExtractColumns(Grid<bool> pattern)
     {
@@ -71,22 +80,6 @@ public partial class Day13 : Day<Day13.Model, int, int>
 
         return rows;
     }
-
-    private static IEnumerable<(bool Vertical, int Position)> FindDifferentMirrorsWithSmudge(Grid<bool> arg)
-    {
-        var original = FindMirrors(arg).Single();
-        
-        foreach (var position in arg.Keys())
-        {
-            arg[position] = !arg[position];
-            var results = FindMirrors(arg).Where(x => x != original);
-            foreach (var result in results)
-            {
-                yield return result;
-            }
-            arg[position] = !arg[position];
-        }
-    }
-
+    
     public record Model(IReadOnlyList<Grid<bool>> Patterns);
 }
