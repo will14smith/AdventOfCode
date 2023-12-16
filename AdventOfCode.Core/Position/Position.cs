@@ -1,6 +1,6 @@
 ﻿namespace AdventOfCode.Core;
 
-public record Position(int X, int Y)
+public record struct Position(int X, int Y)
 {
     public static readonly Position Identity = new(0, 0);
     

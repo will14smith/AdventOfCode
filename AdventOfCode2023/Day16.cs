@@ -39,7 +39,7 @@ public partial class Day16 : Day<Day16.Model, int, int>
             starts.Add((new Position(input.Map.Width - 1, y), Left));
         }
         
-        return starts.Max(x => Solve(input, x.Position, x.Heading));
+        return starts.AsParallel().Max(x => Solve(input, x.Position, x.Heading));
     }
 
     private static int Solve(Model input, Position initialPosition, Position initialHeading)
