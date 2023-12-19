@@ -1,5 +1,4 @@
-﻿using System.Collections.Immutable;
-using Superpower;
+﻿using Superpower;
 using Superpower.Parsers;
 
 namespace AdventOfCode2023;
@@ -7,28 +6,29 @@ namespace AdventOfCode2023;
 [Day]
 public partial class Day19 : ParseDay<Day19.Model, int, long>
 {
-    public static TextParser<Rule> RuleAcceptParser = Span.EqualTo('A').Select(_ => (Rule) new Rule.Accept());
-    public static TextParser<Rule> RuleRejectParser = Span.EqualTo('R').Select(_ => (Rule) new Rule.Reject());
-    public static TextParser<Rule> RuleConditionalParser = Span.Regex("[xmas]").Then(Span.Regex("[<>]")).Then(Numerics.IntegerInt32).ThenIgnore(Span.EqualTo(':')).Then(Span.Regex("A|R|[a-z]+"))
+    private static readonly TextParser<Action> ActionAcceptParser = Span.EqualTo('A').Select(_ => (Action) new Action.Accept());
+    private static readonly TextParser<Action> ActionRejectParser = Span.EqualTo('R').Select(_ => (Action) new Action.Reject());
+    private static readonly TextParser<Action> ActionWorkflowParser = Span.Regex("[a-z]+").Select(x => (Action) new Action.Next(x.ToStringValue()));
+    private static readonly TextParser<Action> ActionParser = ActionAcceptParser.Or(ActionRejectParser).Or(ActionWorkflowParser);
+
+    private static readonly TextParser<Rule> RuleConditionalParser = Span.Regex("[xmas]").Then(Span.Regex("[<>]")).Then(Numerics.IntegerInt32).ThenIgnore(Span.EqualTo(':')).Then(ActionParser)
         .Select(x =>
         {
             var variable = x.Item1.Item1.Item1.ToStringValue()[0];
             var lessThan = x.Item1.Item1.Item2.ToStringValue() == "<";
             var value = x.Item1.Item2;
-            var action = x.Item2.ToStringValue();
+            var condition = new Condition(variable, lessThan, value);
+            
+            var action = x.Item2;
 
-            return action switch
-            {
-                "A" => (Rule) new Rule.ConditionalAccept(new Condition(variable, lessThan, value)),
-                "R" => new Rule.ConditionalReject(new Condition(variable, lessThan, value)),
-                _ => new Rule.ConditionalWorkflow(new Condition(variable, lessThan, value), action)
-            };
+            return new Rule(condition, action);
         });
-    public static TextParser<Rule> RuleWorkflowParser = Span.Regex("[a-z]+").Select(x => (Rule) new Rule.Workflow(x.ToStringValue()));
-    public static TextParser<Rule> RuleParser = RuleAcceptParser.Or(RuleRejectParser).Or(RuleConditionalParser.Try()).Or(RuleWorkflowParser);
-    public static TextParser<Workflow> WorkflowParser = Span.Regex("[a-z]+").ThenIgnore(Span.EqualTo('{')).Then(RuleParser.ManyDelimitedBy(Span.EqualTo(','))).ThenIgnore(Span.EqualTo("}\n")).Select(x => new Workflow(x.Item1.ToStringValue(), x.Item2));
+    private static readonly TextParser<Rule> RuleUnconditionalParser = ActionParser.Select(x => new Rule(null, x));
+    private static readonly TextParser<Rule> RuleParser = RuleConditionalParser.Try().Or(RuleUnconditionalParser);
     
-    public static TextParser<Part> PartParser = Span.EqualTo("{x=").IgnoreThen(Numerics.IntegerInt32)
+    private static readonly TextParser<Workflow> WorkflowParser = Span.Regex("[a-z]+").ThenIgnore(Span.EqualTo('{')).Then(RuleParser.ManyDelimitedBy(Span.EqualTo(','))).ThenIgnore(Span.EqualTo("}\n")).Select(x => new Workflow(x.Item1.ToStringValue(), x.Item2));
+    
+    private static readonly TextParser<Part> PartParser = Span.EqualTo("{x=").IgnoreThen(Numerics.IntegerInt32)
             .ThenIgnore(Span.EqualTo(",m=")).Then(Numerics.IntegerInt32)
             .ThenIgnore(Span.EqualTo(",a=")).Then(Numerics.IntegerInt32)
             .ThenIgnore(Span.EqualTo(",s=")).Then(Numerics.IntegerInt32)
@@ -42,42 +42,39 @@ public partial class Day19 : ParseDay<Day19.Model, int, long>
     protected override int Part1(Model input)
     {
         var workflows = input.Workflows.ToDictionary(x => x.Name);
-
-        return input.Parts.Where(part => ShouldAccept(workflows, part)).Sum(part => part.X + part.M + part.A + part.S);
+        var initialWorkflow = workflows["in"];
+        return input.Parts.Where(part => ShouldAccept(workflows, initialWorkflow, part)).Sum(part => part.X + part.M + part.A + part.S);
     }
 
-    private bool ShouldAccept(Dictionary<string, Workflow> workflows, Part part)
+    private static bool ShouldAccept(IReadOnlyDictionary<string, Workflow> workflows, Workflow current, Part part)
     {
-        var current = workflows["in"];
-
-        while (true)
+        foreach (var rule in current.Rules)
         {
-            foreach (var rule in current.Rules)
+            if (!MatchesCondition(rule.Condition))
             {
-                switch (rule)
-                {
-                    case Rule.Accept: return true;
-                    case Rule.Reject: return false;
-                    case Rule.Workflow workflow: current = workflows[workflow.TargetWorkflow]; goto next;
-
-                    case Rule.ConditionalAccept conditionalAccept when MatchesCondition(conditionalAccept.Condition):
-                        return true;
-                    case Rule.ConditionalReject conditionalReject when MatchesCondition(conditionalReject.Condition):
-                        return false;
-                    case Rule.ConditionalWorkflow conditionalWorkflow when MatchesCondition(conditionalWorkflow.Condition):
-                        current = workflows[conditionalWorkflow.TargetWorkflow]; goto next;
-                }
+                continue;
             }
             
-            next: { }
+            switch (rule.Action)
+            {
+                case Action.Accept: return true;
+                case Action.Reject: return false;
+                case Action.Next next: return ShouldAccept(workflows, workflows[next.TargetWorkflow], part);
+            }
         }
 
-        bool MatchesCondition(Condition condition) => condition.Variable switch
+        throw new Exception("no.");
+        
+        bool MatchesCondition(Condition? condition) => condition?.Variable switch
         {
             'x' => condition.LessThan ? part.X < condition.Value : part.X > condition.Value,
             'm' => condition.LessThan ? part.M < condition.Value : part.M > condition.Value,
             'a' => condition.LessThan ? part.A < condition.Value : part.A > condition.Value,
             's' => condition.LessThan ? part.S < condition.Value : part.S > condition.Value,
+            
+            null => true,
+            
+            _ => throw new Exception("no.")
         };
     }
 
@@ -88,196 +85,93 @@ public partial class Day19 : ParseDay<Day19.Model, int, long>
         var workflows = input.Workflows.ToDictionary(x => x.Name);
 
         var initial = new PartRange(new Range(1, 4000), new Range(1, 4000), new Range(1, 4000), new Range(1, 4000));
-        var ranges = Build(workflows, workflows["in"], new [] { initial });
+        var ranges = FindAcceptedRanges(workflows, workflows["in"], new [] { initial });
 
-        return ranges.Sum(range =>
-        {
-            var x = range.X.Max - range.X.Min + 1;
-            var m = range.M.Max - range.M.Min + 1;
-            var a = range.A.Max - range.A.Min + 1;
-            var s = range.S.Max - range.S.Min + 1;
-
-            return (long)x * m * a * s;
-        });
+        return ranges.Sum(range => range.X.Size * range.M.Size * range.A.Size * range.S.Size);
     }
 
-    private static IEnumerable<PartRange> Build(Dictionary<string, Workflow> workflows, Workflow current, IEnumerable<PartRange> parts)
+    private static IEnumerable<PartRange> FindAcceptedRanges(IReadOnlyDictionary<string, Workflow> workflows, Workflow current, IEnumerable<PartRange> parts)
     {
         var output = Enumerable.Empty<PartRange>();
         
         foreach (var rule in current.Rules)
         {
-            switch (rule)
+            var (matchedParts, unmatchedParts) = SplitRanges(rule.Condition, parts);
+            parts = unmatchedParts;
+            
+            switch (rule.Action)
             {
-                case Rule.Accept: return output.Concat(parts);
-                case Rule.Reject: return output;
-                case Rule.Workflow workflow: return output.Concat(Build(workflows, workflows[workflow.TargetWorkflow], parts));
-
-                case Rule.ConditionalAccept accept:
-                {
-                    var (matchedParts, unmatchedParts) = MatchCondition(accept.Condition, parts);
-                    output = output.Concat(matchedParts);
-                    parts = unmatchedParts;
-                    break;
-                }
-                case Rule.ConditionalReject reject:
-                {
-                    var (_, unmatchedParts) = MatchCondition(reject.Condition, parts);
-                    parts = unmatchedParts;
-                    break;
-                }          
-                case Rule.ConditionalWorkflow workflow:
-                {
-                    var (matchedParts, unmatchedParts) = MatchCondition(workflow.Condition, parts);
-                    output = output.Concat(Build(workflows, workflows[workflow.TargetWorkflow], matchedParts));
-                    parts = unmatchedParts;
-                    break;
-                }
+                case Action.Accept: output = output.Concat(matchedParts); break;
+                case Action.Reject: break;
+                case Action.Next next: output = output.Concat(FindAcceptedRanges(workflows, workflows[next.TargetWorkflow], matchedParts)); break;
                 
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(rule));
+                default: throw new ArgumentOutOfRangeException(nameof(rule));
             }
         }
 
         return output;
         
-        static (IEnumerable<PartRange> MatchedParts, IEnumerable<PartRange> UnmatchedParts) MatchCondition(Condition condition, IEnumerable<PartRange> parts)
+        static (IEnumerable<PartRange> MatchedParts, IEnumerable<PartRange> UnmatchedParts) SplitRanges(Condition? condition, IEnumerable<PartRange> parts)
         {
+            if (condition == null)
+            {
+                return (parts, Enumerable.Empty<PartRange>());
+            }
+            
             var matched = new List<PartRange>();
             var unmatched = new List<PartRange>();
-            
-            switch (condition)
+
+            foreach (var part in parts)
             {
-                case { Variable: 'x', LessThan: true }:
-                {
-                    foreach (var part in parts)
-                    {
-                        var mr = part.X with { Max = condition.Value - 1 };
-                        if (mr.Valid) matched.Add(part with { X = mr });
-
-                        var ur = part.X with { Min = condition.Value };
-                        if (ur.Valid) unmatched.Add(part with { X = ur });
-                    }
-
-                    return (matched, unmatched);
-                }
-                case { Variable: 'm', LessThan: true }:
-                {
-                    foreach (var part in parts)
-                    {
-                        var mr = part.M with { Max = condition.Value - 1 };
-                        if (mr.Valid) matched.Add(part with { M = mr });
-
-                        var ur = part.M with { Min = condition.Value };
-                        if (ur.Valid) unmatched.Add(part with { M = ur });
-                    }
-
-                    return (matched, unmatched);
-                }
-                case { Variable: 'a', LessThan: true }:
-                {
-                    foreach (var part in parts)
-                    {
-                        var mr = part.A with { Max = condition.Value - 1 };
-                        if (mr.Valid) matched.Add(part with { A = mr });
-
-                        var ur = part.A with { Min = condition.Value };
-                        if (ur.Valid) unmatched.Add(part with { A = ur });
-                    }
-
-                    return (matched, unmatched);
-                }
-                case { Variable: 's', LessThan: true }:
-                {
-                    foreach (var part in parts)
-                    {
-                        var mr = part.S with { Max = condition.Value - 1 };
-                        if (mr.Valid) matched.Add(part with { S = mr });
-
-                        var ur = part.S with { Min = condition.Value };
-                        if (ur.Valid) unmatched.Add(part with { S = ur });
-                    }
-
-                    return (matched, unmatched);
-                }
+                var (matchedRange, unmatchedRange) = SplitRange(condition, part[condition.Variable]);
                 
-                case { Variable: 'x', LessThan: false }:
-                {
-                    foreach (var part in parts)
-                    {
-                        var mr = part.X with { Min = condition.Value + 1 };
-                        if (mr.Valid) matched.Add(part with { X = mr });
-
-                        var ur = part.X with { Max = condition.Value };
-                        if (ur.Valid) unmatched.Add(part with { X = ur });
-                    }
-
-                    return (matched, unmatched);
-                }
-                case { Variable: 'm', LessThan: false }:
-                {
-                    foreach (var part in parts)
-                    {
-                        var mr = part.M with { Min = condition.Value + 1 };
-                        if (mr.Valid) matched.Add(part with { M = mr });
-
-                        var ur = part.M with { Max = condition.Value };
-                        if (ur.Valid) unmatched.Add(part with { M = ur });
-                    }
-
-                    return (matched, unmatched);
-                }
-                case { Variable: 'a', LessThan: false }:
-                {
-                    foreach (var part in parts)
-                    {
-                        var mr = part.A with { Min = condition.Value + 1 };
-                        if (mr.Valid) matched.Add(part with { A = mr });
-
-                        var ur = part.A with { Max = condition.Value };
-                        if (ur.Valid) unmatched.Add(part with { A = ur });
-                    }
-
-                    return (matched, unmatched);
-                }
-                case { Variable: 's', LessThan: false }:
-                {
-                    foreach (var part in parts)
-                    {
-                        var mr = part.S with { Min = condition.Value + 1 };
-                        if (mr.Valid) matched.Add(part with { S = mr });
-
-                        var ur = part.S with { Max = condition.Value };
-                        if (ur.Valid) unmatched.Add(part with { S = ur });
-                    }
-
-                    return (matched, unmatched);
-                }
-                
-                default: throw new NotImplementedException(condition.ToString());
+                matched.Add(part.With(condition.Variable, matchedRange));
+                unmatched.Add(part.With(condition.Variable, unmatchedRange));
             }
+
+            return (matched, unmatched);
         }
+
+        static (Range Matched, Range Unmatched) SplitRange(Condition condition, Range range) => 
+            condition.LessThan 
+                ? (range with { Max = condition.Value - 1 }, range with { Min = condition.Value }) 
+                : (range with { Min = condition.Value + 1 }, range with { Max = condition.Value });
     }
 
     public record Model(IReadOnlyList<Workflow> Workflows, IReadOnlyList<Part> Parts);
 
     public record Workflow(string Name, IReadOnlyList<Rule> Rules);
-    public abstract record Rule
-    {
-        public record Workflow(string TargetWorkflow) : Rule;
-        public record Accept : Rule;
-        public record Reject : Rule;
-        public record ConditionalWorkflow(Condition Condition, string TargetWorkflow) : Rule;
-        public record ConditionalAccept(Condition Condition) : Rule;
-        public record ConditionalReject(Condition Condition) : Rule;
-    }
+    public record Rule(Condition? Condition, Action Action);
     public record Condition(char Variable, bool LessThan, int Value);
+    public abstract record Action
+    {
+        public record Next(string TargetWorkflow) : Action;
+        public record Accept : Action;
+        public record Reject : Action;
+    }
 
     public record Part(int X, int M, int A, int S);
 
     public record Range(int Min, int Max)
     {
-        public bool Valid => Min <= Max;
+        public long Size => Min > Max ? 0 : Max - Min + 1;
     }
-    public record PartRange(Range X, Range M, Range A, Range S);
+    public record PartRange(Range X, Range M, Range A, Range S)
+    {
+        public Range this[char variable] => variable switch
+        {
+            'x' => X,
+            'm' => M,
+            'a' => A,
+            's' => S,
+        };
+
+        public PartRange With(char variable, Range value) => variable switch
+        {
+            'x' => this with { X = value },
+            'm' => this with { M = value },
+            'a' => this with { A = value },
+            's' => this with { S = value },
+        };
+    }
 }
