@@ -19,7 +19,7 @@ public partial class Day22 : LineDay<Day22.Brick, int, int>
         var model = SimulateGravity(input);
         
         var removable = 0;
-        foreach (var brick in model.Bricks)
+        foreach (var brick in model.Bricks.Keys)
         {
             var canRemove = true;
             foreach (var supportedBrick in model.Supporting[brick])
@@ -39,24 +39,23 @@ public partial class Day22 : LineDay<Day22.Brick, int, int>
         var model = SimulateGravity(input); 
         
         var removable = 0;
-        foreach (var brick in model.Bricks)
+        foreach (var brick in model.Bricks.Keys)
         {
-            var fall = new HashSet<Brick>();
-            fall.Add(brick);
-            var search = new Queue<Brick>();
+            var fall = new HashSet<int>();
+            var search = new Queue<int>();
             search.Enqueue(brick);
 
             while (search.Count > 0)
             {
                 var remove = search.Dequeue();
-                if (!model.SupportedBy.TryGetValue(remove, out var value) || !value.Except(fall).Any())
-                {
-                    fall.Add(remove);
-                }
+                fall.Add(remove);
                 
                 foreach (var above in model.Supporting[remove])
                 {
-                    search.Enqueue(above);
+                    if (model.SupportedBy[above].All(x => fall.Contains(x)))
+                    {
+                        search.Enqueue(above);
+                    }
                 }
             }
 
@@ -71,8 +70,8 @@ public partial class Day22 : LineDay<Day22.Brick, int, int>
 
     private static Model SimulateGravity(IEnumerable<Brick> input)
     {
-        var placed = new List<Brick>();
-        var occupied = new Dictionary<Position3, Brick>();
+        var placed = new Dictionary<Brick, int>();
+        var occupied = new Dictionary<Position3, int>();
 
         var down = new Position3(0, 0, -1);
 
@@ -94,41 +93,44 @@ public partial class Day22 : LineDay<Day22.Brick, int, int>
                 }
             }
 
-            placed.Add(current);
+            var id = placed.Count;
+            placed.Add(current, id);
             foreach (var position in current.Occupied)
             {
-                occupied.Add(position, current);
+                occupied.Add(position, id);
             }
         }
-
-        var supporting = new Dictionary<Brick, IReadOnlyCollection<Brick>>();
         
-        foreach (var brick in placed)
+        var supporting = new Dictionary<int, IReadOnlyCollection<int>>();
+        
+        foreach (var (brick, id) in placed)
         {
-            var above = new HashSet<Brick>();
+            var above = new HashSet<int>();
             foreach (var position in brick.Occupied)
             {
-                if (occupied.TryGetValue(position - down, out var brickAbove) && brickAbove != brick)
+                if (occupied.TryGetValue(position - down, out var brickAbove) && brickAbove != id)
                 {
                     above.Add(brickAbove);
                 }
             }
 
-            supporting[brick] = above;
+            supporting[id] = above;
         }
 
         var supportedBy = supporting
             .SelectMany(x => x.Value.Select(y => (Below: x.Key, Above: y)))
             .GroupBy(x => x.Above)
-            .ToDictionary(x => x.Key, x => (IReadOnlyCollection<Brick>) x.Select(y => y.Below).ToHashSet());
-
-        return new Model(placed, supporting, supportedBy);
+            .ToDictionary(x => x.Key, x => (IReadOnlyCollection<int>) x.Select(y => y.Below).ToHashSet());
+        
+        var idToBrick = placed.ToDictionary(x => x.Value, x => x.Key);
+        
+        return new Model(idToBrick, supporting, supportedBy);
     }
     
     private record Model(
-        IReadOnlyCollection<Brick> Bricks,
-        IReadOnlyDictionary<Brick, IReadOnlyCollection<Brick>> Supporting,
-        IReadOnlyDictionary<Brick, IReadOnlyCollection<Brick>> SupportedBy);
+        IReadOnlyDictionary<int, Brick> Bricks,
+        IReadOnlyDictionary<int, IReadOnlyCollection<int>> Supporting,
+        IReadOnlyDictionary<int, IReadOnlyCollection<int>> SupportedBy);
     
     public record Brick(Position3 A, Position3 B)
     {
