@@ -34,6 +34,7 @@ public class Position3
     }
 
     public static Position3 operator +(Position3 a, Position3 b) => new(Sse2.Add(a._elems, b._elems));
+    public static Position3 operator -(Position3 a, Position3 b) => new(Sse2.Subtract(a._elems, b._elems));
     public static Position3 operator *(int a, Position3 b) => new(Avx.MultiplyLow(Vector128.Create(a), b._elems));
     public static Position3 operator *(Position3 a, int b) => b * a;
     
