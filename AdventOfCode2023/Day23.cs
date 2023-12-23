@@ -36,18 +36,16 @@ public partial class Day23 : Day<Day23.Model, int, int>
 
     private static int FindMaxPath(Graph graph)
     {
-        var maxPath = FindPath(ImmutableList<(Position, int)>.Empty.Add((graph.Start, 0)), graph.End).MaxBy(x => x.Sum(y => y.Item2));
-
-        return maxPath.Sum(y => y.Item2);
+        return FindPath(graph.Start, graph.End, ImmutableHashSet<Position>.Empty, 0).Max(x => x);
         
-        IEnumerable<ImmutableList<(Position, int)>> FindPath(ImmutableList<(Position, int)> path, Position target)
+        IEnumerable<int> FindPath(Position current, Position target, ImmutableHashSet<Position> visited, int distance)
         {
-            var (current, _) = path.Last();
-            if (current == target) return new[] { path };
+            if (current == target) return new[] { distance };
 
+            var nextVisited = visited.Add(current);
+            
             var neighbours = graph.Edges[current];
-
-            return neighbours.Where(x => path.All(y => y.Item1 != x.Item1)).SelectMany(x => FindPath(path.Add(x), target));
+            return neighbours.Where(x => !visited.Contains(x.Node)).SelectMany(x => FindPath(x.Node, target, nextVisited, distance + x.Distance));
         }
     }
 
