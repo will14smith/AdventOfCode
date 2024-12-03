@@ -14,10 +14,22 @@ public partial class Day03 : Day<Day03.Model, int, int>
         public record Dont : Instruction;
     }
     
-    protected override Model Parse(string input) => new Model(Regex.Matches(input, @"mul\((\d{1,3}),(\d{1,3})\)|do\(\)|don't\(\)")
-        .Select(x => x.Groups[0].Value.StartsWith("mul") ? (Instruction) new Instruction.Mul(int.Parse(x.Groups[1].Value), int.Parse(x.Groups[2].Value)) : x.Groups[0].Value.StartsWith("don't") ? new Instruction.Dont() : new Instruction.Do())
-        .ToArray());
-    
+    [GeneratedRegex(@"mul\((\d{1,3}),(\d{1,3})\)|do\(\)|don't\(\)")]
+    private static partial Regex InstructionRegex();
+
+    protected override Model Parse(string input) => new(InstructionRegex().Matches(input).Select(ParseInstruction).ToArray());
+    private static Instruction ParseInstruction(Match x)
+    {
+        var match = x.Groups[0].Value;
+
+        if (match.StartsWith("mul"))
+        {
+            return new Instruction.Mul(int.Parse(x.Groups[1].Value), int.Parse(x.Groups[2].Value));
+        }
+        
+        return match.StartsWith("don't") ? new Instruction.Dont() : new Instruction.Do();
+    }
+
     [Sample("xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))", 161)]
     [Sample("mul(4*", 0)]
     [Sample("mul(6,9!", 0)]
