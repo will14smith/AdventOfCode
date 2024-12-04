@@ -10,71 +10,48 @@ public partial class Day04 : Day<Day04.Model, int, int>
     [Sample("MMMSXXMASM\nMSAMXMSMSA\nAMXSXMAAMM\nMSAMASMSMX\nXMASAMXAMM\nXXAMMXXAMA\nSMSMSASXSS\nSAXAMASAAA\nMAMMMXMMMM\nMXMXAXMASX", 18)]
     protected override int Part1(Model input)
     {
-        var target = "XMAS";
+        const string target = "XMAS";
         var directions = Position.Identity.StrictNeighbours().Select(x => Enumerable.Repeat(x, target.Length).Index().Select(x => x.Item * x.Index).ToArray()).ToArray();
 
-        var count = 0;
-        foreach (var position in input.Grid.Keys())
-        {
-            foreach (var direction in directions)
-            {
-                var found = true;
-                for (var i = 0; i < direction.Length; i++)
-                {
-                    var position1 = position + direction[i];
-                    if (!input.Grid.IsValid(position1))
-                    {
-                        found = false;
-                        break;
-                    }
-
-                    if (input.Grid[position1] != target[i])
-                    {
-                        found = false;
-                        break;
-                    }
-                }
-
-                if (found)
-                {
-                    count++;
-                }
-            }
-        }
-        return count;
+        return input.Grid.Keys().Sum(position => directions.Count(direction => CheckWordInDirection(input, direction, position, target)));
     }
 
-    [Sample(
-        "MMMSXXMASM\nMSAMXMSMSA\nAMXSXMAAMM\nMSAMASMSMX\nXMASAMXAMM\nXXAMMXXAMA\nSMSMSASXSS\nSAXAMASAAA\nMAMMMXMMMM\nMXMXAXMASX",
-        9)]
-    protected override int Part2(Model input)
+    private static bool CheckWordInDirection(Model input, Position[] directions, Position start, string target)
     {
-        var count = 0;
-        foreach (var position in input.Grid.Keys())
+        for (var i = 0; i < directions.Length; i++)
         {
-            if (input.Grid[position] != 'A')
+            var position = start + directions[i];
+            if (!input.Grid.IsValid(position) || input.Grid[position] != target[i])
             {
-                continue;
+                return false;
             }
-
-            if (!input.Grid.IsValid(position - new Position(1, 1)))
-            {
-                continue;
-            }
-            if (!input.Grid.IsValid(position + new Position(1, 1)))
-            {
-                continue;
-            }
-
-            var positives = input.Grid[position - new Position(1 , 1)].ToString() + input.Grid[position + new Position(1 , 1)];
-            var negatives = input.Grid[position - new Position(1 , -1)].ToString() + input.Grid[position + new Position(1 , -1)];
-
-            if (positives is not ("MS" or "SM")) continue;
-            if (negatives is not ("MS" or "SM")) continue;
-
-            count++;
         }
 
-        return count;
+        return true;
+    }
+
+    [Sample("MMMSXXMASM\nMSAMXMSMSA\nAMXSXMAAMM\nMSAMASMSMX\nXMASAMXAMM\nXXAMMXXAMA\nSMSMSASXSS\nSAXAMASAAA\nMAMMMXMMMM\nMXMXAXMASX", 9)]
+    protected override int Part2(Model input) => input.Grid.Keys().Count(position => IsCrossOfMas(input, position));
+
+    private static bool IsCrossOfMas(Model input, Position position)
+    {
+        if (input.Grid[position] != 'A')
+        {
+            return false;
+        }
+
+        if (!input.Grid.IsValid(position - new Position(1, 1)))
+        {
+            return false;
+        }
+        if (!input.Grid.IsValid(position + new Position(1, 1)))
+        {
+            return false;
+        }
+
+        var positives = (input.Grid[position - new Position(1 , 1)], input.Grid[position + new Position(1 , 1)]);
+        var negatives = (input.Grid[position - new Position(1 , -1)], input.Grid[position + new Position(1 , -1)]);
+
+        return positives is ('M', 'S') or ('S', 'M') && negatives is ('M', 'S') or ('S', 'M');
     }
 }
