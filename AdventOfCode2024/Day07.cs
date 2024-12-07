@@ -19,63 +19,68 @@ public partial class Day07 : LineDay<Day07.Model, long, long>
     [Sample("190: 10 19\n3267: 81 40 27\n83: 17 5\n156: 15 6\n7290: 6 8 6 15\n161011: 16 10 13\n192: 17 8 14\n21037: 9 7 18 13\n292: 11 6 16 20", 11387L)]
     protected override long Part2(IEnumerable<Model> input) => input.Where(TryAddMultiplyConcat).Sum(x => x.TestValue);
     
-    private static bool TryAddMultiply(Model input) => TryAddMultiply(input, 0, 0);
-    private static bool TryAddMultiply(Model input, int index, long accumulator)
+    private static bool TryAddMultiply(Model input) => TryAddMultiply(input.Values, input.Values.Count - 1, input.TestValue);
+
+    private static bool TryAddMultiply(IReadOnlyList<long> values, int index, long accumulator)
     {
-        if (index == input.Values.Count)
-        {
-            return input.TestValue == accumulator;
-        }
-        
-        var value = input.Values[index];
         if (index == 0)
         {
-            return TryAddMultiply(input, 1, value);
+            return accumulator == values[0];
         }
-
-        if (accumulator > input.TestValue)
+        
+        var value = values[index];
+        if (value > accumulator)
         {
             return false;
         }
-
-        if (TryAddMultiply(input, index + 1, value + accumulator))
+        
+        var quotient = Math.DivRem(accumulator, value, out var remainder);
+        if (remainder == 0)
         {
-            return true;
+            if (TryAddMultiply(values, index - 1, quotient))
+            {
+                return true;
+            }
         }
-
-        return TryAddMultiply(input, index + 1, value * accumulator); 
+        
+        return TryAddMultiply(values, index - 1, accumulator - value); 
     }
-    
-    private static bool TryAddMultiplyConcat(Model input) => TryAddMultiplyConcat(input, 0, 0);
-    private static bool TryAddMultiplyConcat(Model input, int index, long accumulator)
+
+
+    private static bool TryAddMultiplyConcat(Model input) => TryAddMultiplyConcat(input.Values, input.Values.Count - 1, input.TestValue);
+    private static bool TryAddMultiplyConcat(IReadOnlyList<long> values, int index, long accumulator)
     {
-        if (index == input.Values.Count)
-        {
-            return input.TestValue == accumulator;
-        }
-        
-        var value = input.Values[index];
         if (index == 0)
         {
-            return TryAddMultiplyConcat(input, 1, value);
+            return accumulator == values[0];
         }
-
-        if (accumulator > input.TestValue)
+        
+        var value = values[index];
+        if (value > accumulator)
         {
             return false;
         }
-
-        if (TryAddMultiplyConcat(input, index + 1, value + accumulator))
+        
+        var quotient = Math.DivRem(accumulator, value, out var remainder);
+        if (remainder == 0)
         {
-            return true;
+            if (TryAddMultiplyConcat(values, index - 1, quotient))
+            {
+                return true;
+            }
         }
 
-        if (TryAddMultiplyConcat(input, index + 1, value * accumulator))
+        var accumulatorString = accumulator.ToString();
+        var valueString = value.ToString();
+        if (accumulatorString.Length > valueString.Length && accumulatorString.EndsWith(valueString))
         {
-            return true;
+            if (TryAddMultiplyConcat(values, index - 1, long.Parse(accumulatorString.Remove(accumulatorString.Length - valueString.Length))))
+            {
+                return true;
+            }
         }
-
-        return TryAddMultiplyConcat(input, index + 1, long.Parse($"{accumulator}{value}"));
+        
+        return TryAddMultiplyConcat(values, index - 1, accumulator - value); 
     }
 
 }
