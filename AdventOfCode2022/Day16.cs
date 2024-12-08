@@ -64,11 +64,11 @@ public partial class Day16 : ParseLineDay<Day16.Input, int, int>
         return best;
     }
 
-    private static NodeFlags ToIndex(IEnumerable<int> nodes)
+    private static NodeFlags ToIndex(ReadOnlyMemory<int> nodes)
     {
         var flags = 0L;
 
-        foreach (var node in nodes)
+        foreach (var node in nodes.Span)
         {
             flags |= 1L << node;
         }

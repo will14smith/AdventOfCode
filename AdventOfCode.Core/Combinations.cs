@@ -2,9 +2,9 @@
 
 public static class Combinations
 {
-    public static IEnumerable<IEnumerable<T>> Get<T>(IReadOnlyList<T> list)
+    public static IEnumerable<ReadOnlyMemory<T>> Get<T>(IReadOnlyList<T> list)
     {
-        var combinations = Enumerable.Empty<IEnumerable<T>>();
+        var combinations = Enumerable.Empty<ReadOnlyMemory<T>>();
         
         for (var i = 1; i <= list.Count; i++)
         {
@@ -14,7 +14,7 @@ public static class Combinations
         return combinations;
     }
     
-    public static IEnumerable<IEnumerable<T>> Get<T>(IReadOnlyList<T> input, int outputLength)
+    public static IEnumerable<ReadOnlyMemory<T>> Get<T>(IReadOnlyList<T> input, int outputLength)
     {
         var inputLength = input.Count;
         if (outputLength > inputLength)
@@ -54,7 +54,7 @@ public static class Combinations
             yield return Build(input, indices);
         }
         
-        static IEnumerable<T> Build(IReadOnlyList<T> input, in ReadOnlySpan<int> indices)
+        static ReadOnlyMemory<T> Build(IReadOnlyList<T> input, in ReadOnlySpan<int> indices)
         {
             var outputLength = indices.Length;
             var result = new T[outputLength];
