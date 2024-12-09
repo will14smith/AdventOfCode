@@ -60,17 +60,7 @@ public partial class Day09 : Day<Day09.Model, long, long>
             }
         }
 
-        var checksum = 0L;
-        var idx = 0;
-        foreach (var entry in newDisk)
-        {
-            for (var i = 0; i < entry.Size; i++)
-            {
-                checksum += entry.Id * idx++;
-            }
-        }
-
-        return checksum;
+        return CalculateChecksum(newDisk);
     }
     
     [Sample("2333133121414131402", 2858L)]
@@ -110,52 +100,77 @@ public partial class Day09 : Day<Day09.Model, long, long>
                 }
 
                 disk.Insert(findIndex, file);
-            }
 
-            disk = Compact(disk);
-
-            List<DiskEntry> Compact(List<DiskEntry> diskEntries)
-            {
-                var newDisk = new List<DiskEntry> { diskEntries[0] };
-
-                foreach (var diskEntry in diskEntries.Skip(1))
-                {
-                    if (diskEntry is DiskEntry.Free currFree && newDisk[^1] is DiskEntry.Free prevFree)
-                    {
-                        newDisk[^1] = new DiskEntry.Free(currFree.Size + prevFree.Size);
-                    }
-                    else
-                    {
-                        newDisk.Add(diskEntry);
-                    }
-                }
-                
-                return newDisk;
+                disk = Compact(disk);
             }
         }
         
+        return CalculateChecksum(disk);
+    }
+
+    private List<DiskEntry> Compact(IReadOnlyList<DiskEntry> previousDisk)
+    {
+        var disk = new List<DiskEntry>(previousDisk.Count);
+
+        DiskEntry? previous = null;
+        foreach (var diskEntry in previousDisk)
+        {
+            switch (diskEntry)
+            {
+                case DiskEntry.Allocated: 
+                    disk.Add(previous = diskEntry); 
+                    break;
+                    
+                case DiskEntry.Free free:
+                    if (previous is DiskEntry.Free previousFree)
+                    {
+                        disk[^1] = previous = new DiskEntry.Free(previousFree.Size + free.Size);
+                    }
+                    else
+                    {
+                        disk.Add(previous = free);
+                    }
+                    break;
+                
+                default: throw new ArgumentOutOfRangeException(nameof(diskEntry));
+            }
+        }
+
+        return disk;
+    }
+
+    private static long CalculateChecksum(IReadOnlyList<DiskEntry> disk)
+    {
         var checksum = 0L;
         var idx = 0L;
+        
         foreach (var entry in disk)
         {
-            if (entry is DiskEntry.Free free)
+            if (entry is DiskEntry.Allocated allocated)
             {
-                idx += free.Size;
-            }
-            else if(entry is DiskEntry.Allocated allocated)
-            {
-                for (var i = 0; i < allocated.Size; i++)
+                for (var i = 0; i < entry.Size; i++)
                 {
                     checksum += allocated.Id * idx++;
                 }
             }
+            else
+            {
+                idx += entry.Size;
+            }
         }
 
-        return checksum;    }
-
-    private abstract record DiskEntry
+        return checksum;
+    }
+    
+    private abstract class DiskEntry(long size)
     {
-        public record Allocated(long Id, long Size) : DiskEntry;
-        public record Free(long Size) : DiskEntry;
+        public long Size { get; } = size;
+
+        public class Allocated(long Id, long size) : DiskEntry(size)
+        {
+            public long Id { get; } = Id;
+        }
+
+        public class Free(long size) : DiskEntry(size);
     }
 }
