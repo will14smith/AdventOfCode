@@ -123,83 +123,29 @@ public partial class Day15 : Day<Day15.Model, int, int>
                 Direction.Left => new Position(-1, 0),
                 Direction.Right => new Position(1, 0),
             };
-            var next = robot + delta;
 
-            switch (map[next])
+            var cellsToMove = (direction switch
             {
-                case Cell2.Empty:
-                    map[robot] = Cell2.Empty;
-                    map[next] = Cell2.Robot;
-                    robot = next;
-                    break;
-                
-                case Cell2.Wall: 
-                    break;
-                
-                case Cell2.BoxLeft when direction == Direction.Right:
-                case Cell2.BoxRight when direction == Direction.Left:
-                    var endOfChain = next;
-                    while (true)
-                    {
-                        endOfChain += delta;
-                        
-                        var endOfChainCell = map[endOfChain];
-                        if (endOfChainCell == Cell2.Empty)
-                        {
-                            map[robot] = Cell2.Empty;
-                            map[next] = Cell2.Robot;
-                            robot = next;
-
-                            next += delta;
-                            while (next != endOfChain + delta)
-                            {
-                                if (direction == Direction.Right)
-                                {
-                                    map[next] = map[next] == Cell2.BoxRight ? Cell2.BoxLeft : Cell2.BoxRight;
-                                }
-                                else
-                                {
-                                    map[next] = map[next] == Cell2.BoxLeft ? Cell2.BoxRight : Cell2.BoxLeft;
-                                }
-
-                                next += delta;
-                            }
-                            break;
-                        } 
-                        if (endOfChainCell == Cell2.Wall)
-                        {
-                            break;
-                        } 
-                        
-                        if (endOfChainCell is Cell2.BoxLeft or Cell2.BoxRight)
-                        {
-                            continue;
-                        }
-
-                        throw new InvalidOperationException();
-                    }
-                    break;
-                
-                case Cell2.BoxLeft when direction is Direction.Up or Direction.Down:
-                case Cell2.BoxRight when direction is Direction.Up or Direction.Down:
-                    var move = PushUpDown(map, robot, delta)?.Distinct().ToDictionary(x => x, x => map[x]);
-                    if (move is null)
-                    {
-                        break;
-                    }
+                Direction.Up or Direction.Down => PushUpDown(map, robot, delta),
+                Direction.Left or Direction.Right => PushLeftRight(map, robot, delta),
+            })?.Distinct().ToDictionary(x => x, x => map[x]);
+            
+            if (cellsToMove is null)
+            {
+                continue;
+            }
                     
-                    foreach (var pair in move)
-                    {
-                        if (!move.ContainsKey(pair.Key - delta))
-                        {
-                            map[pair.Key] = Cell2.Empty;
-                        }
-                        map[pair.Key + delta] = pair.Value;
-                    }
-                    robot = next;
-                    break;
-
-                default: throw new InvalidOperationException();
+            foreach (var pair in cellsToMove)
+            {
+                map[pair.Key + delta] = pair.Value;
+                if (pair.Value == Cell2.Robot)
+                {
+                    robot = pair.Key + delta;
+                }
+                if (!cellsToMove.ContainsKey(pair.Key - delta))
+                {
+                    map[pair.Key] = Cell2.Empty;
+                }
             }
         }
 
@@ -249,6 +195,34 @@ public partial class Day15 : Day<Day15.Model, int, int>
         throw new InvalidOperationException();
     }
     
+    public static IEnumerable<Position>? PushLeftRight(Grid<Cell2> map, Position position, Position delta)
+    {
+        if (map[position] == Cell2.Empty)
+        {
+            return Array.Empty<Position>();
+        }
+        
+        if (map[position] == Cell2.Robot)
+        {
+            var next = PushLeftRight(map, position + delta, delta);
+            return next?.Append(position);
+        }
+
+        if (map[position] == Cell2.Wall)
+        {
+            return null;
+        }
+        
+        if (map[position] is Cell2.BoxLeft or Cell2.BoxRight)
+        {
+            var next = PushLeftRight(map, position + delta, delta);
+            return next?.Append(position);
+        }
+        
+        throw new InvalidOperationException();
+    }
+
+    
     private static int SumCoordinates(Grid<Cell> map) => map.Keys().Where(p => map[p] == Cell.Box).Sum(p => p.X + 100 * p.Y);
     private static int SumCoordinates(Grid<Cell2> map) => map.Keys().Where(p => map[p] == Cell2.BoxLeft).Sum(p => p.X + 100 * p.Y);
     
@@ -260,7 +234,7 @@ public partial class Day15 : Day<Day15.Model, int, int>
         BoxRight,
         Robot,
     }
-    private Grid<Cell2> ExpandMap(Grid<Cell> map)
+    private static Grid<Cell2> ExpandMap(Grid<Cell> map)
     {
         var newMap = Grid.Empty<Cell2>(map.Width * 2, map.Height);
         
