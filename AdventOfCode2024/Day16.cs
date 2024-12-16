@@ -98,6 +98,30 @@ public partial class Day16 : Day<Day16.Model, int, int>
         var initialPath = ImmutableList<(Position, Position)>.Empty;
         var initialVisited = ImmutableHashSet<(Position, Position)>.Empty;
 
+        var costs = new Dictionary<(Position Position, Position Heading), int>();
+        var queue = new Queue<((Position, Position), int)>([((end, new Position(0, 1)), 0), ((end, new Position(0, -1)), 0), ((end, new Position(1, 0)), 0), ((end, new Position(-1, 0)), 0)]);
+
+        while (queue.Count > 0)
+        {
+            var (state, cost) = queue.Dequeue();
+            
+            if (input.Map[state.Item1] == Cell.Wall)
+            {
+                continue;
+            }
+            
+            if (costs.TryGetValue(state, out var existingCost) && cost >= existingCost)
+            {
+                continue;
+            }
+            
+            costs[state] = cost;
+            
+            queue.Enqueue(((state.Item1 - state.Item2, state.Item2), cost + 1));
+            queue.Enqueue(((state.Item1, state.Item2.RotateCW(90)), cost + 1000));
+            queue.Enqueue(((state.Item1, state.Item2.RotateCCW(90)), cost + 1000));
+        }
+        
         var paths = FindPaths(initialState, initialPath, initialVisited, best);
         return paths.SelectMany(x => x).Select(x => x.Item1).ToHashSet().Count;
         
@@ -118,8 +142,7 @@ public partial class Day16 : Day<Day16.Model, int, int>
                 yield break;
             }
 
-            // TODO: probably just pre-calculate & cache all the scores instead of starting from scratch
-            if (Score(input.Map, state, end) > remainingScore)
+            if (costs[state] > remainingScore)
             {
                 yield break;
             }
