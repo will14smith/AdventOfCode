@@ -11,6 +11,13 @@ public record struct Position(int X, int Y)
     public static Position operator /(Position a, int scale) => new(a.X / scale, a.Y / scale);
     
     public static Position operator -(Position a) => new(-a.X, -a.Y);
+
+    public static Position Parse(string input, string delimiter = ",")
+    {
+        var parts = input.Split(delimiter);
+        
+        return new Position(int.Parse(parts[0]), int.Parse(parts[1]));
+    }
 }
 
 public static class PositionLengthExtensions
