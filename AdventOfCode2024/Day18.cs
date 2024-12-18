@@ -6,32 +6,38 @@ public partial class Day18 : LineDay<Day18.Model, int, string>
     public record Model(Position Position);
     protected override Model ParseLine(string input) => new (Position.Parse(input));
 
-    protected override int Part1(IEnumerable<Model> input)
-    {
-        return Solve(input, 1024);
-    }
-    
+    protected override int Part1(IEnumerable<Model> input) => Solve(input, 1024) ?? throw new InvalidOperationException();
+
     protected override string Part2(IEnumerable<Model> input)
     {
         var inputs = input.ToArray();
 
-        for (var i = 1024; i < inputs.Length; i++)
+        var lower = 1024;
+        var upper = inputs.Length;
+
+        while (true)
         {
-            try
+            if (lower + 1 == upper)
             {
-                Solve(inputs, i);
-            }
-            catch
-            {
-                var failing = inputs[i - 1].Position;
+                var failing = inputs[lower].Position;
                 return $"{failing.X},{failing.Y}";
             }
+            
+            var mid = (lower + upper) / 2;
+
+            var solvable = Solve(inputs, mid).HasValue;
+            if (solvable)
+            {
+                lower = mid;
+            }
+            else
+            {
+                upper = mid;
+            }
         }
-        
-        throw new NotImplementedException();
     }
     
-    private static int Solve(IEnumerable<Model> input, int count)
+    private static int? Solve(IEnumerable<Model> input, int count)
     {
         var start = new Position(0, 0);
         var end = new Position(70, 70);
@@ -83,8 +89,8 @@ public partial class Day18 : LineDay<Day18.Model, int, string>
 
             }
         }
-        
-        throw new Exception("no solution");
+
+        return null;
         
         int H(Position p) => (end - p).TaxiDistance();
     }

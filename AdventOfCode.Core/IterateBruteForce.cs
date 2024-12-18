@@ -21,7 +21,6 @@ public static class IterateBruteForce
         
         return results.Min();
     }
-
     
     public static int SolveMin<TLocal>(Func<TLocal> init, Func<int, TLocal, bool> loop)
     {
