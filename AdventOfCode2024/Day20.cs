@@ -25,50 +25,12 @@ public partial class Day20 : Day<Day20.Model, int, int>
         }));
 
     [Sample("###############\n#...#...#.....#\n#.#.#.#.#.###.#\n#S#...#.#.#...#\n#######.#.#.###\n#######.#.#...#\n#######.#.###.#\n###..E#...#...#\n###.#######.###\n#...###...#...#\n#.#####.#.###.#\n#.#...#.#.#...#\n#.#.#.#.#.#.###\n#...#...#...###\n###############", 0)]
-    protected override int Part1(Model input)
-    {
-        var start = input.Grid.Keys().First(x => input.Grid[x] == Cell.Start);
-        var end = input.Grid.Keys().First(x => input.Grid[x] == Cell.End);
+    protected override int Part1(Model input) => Solve(input, 2);
 
-        var path = new List<Position>([start]);
-        var visited = new HashSet<Position>([start]);
-        
-        var current = start;
-        while (current != end)
-        {
-            current = current.OrthogonalNeighbours().First(x => input.Grid[x] != Cell.Wall && visited.Add(x));
-            path.Add(current);
-        }
-
-        var indexedPath = path.Index().ToDictionary(x => x.Item, x => x.Index);
-
-        var saving = new List<int>();
-        
-        IReadOnlyList<Position> cheats = [new(2,0), new(-2,0), new(0,2), new(0,-2)];
-        foreach (var position in path)
-        {
-            var positionIndex = indexedPath[position];
-            
-            foreach (var cheat in cheats)
-            {
-                var nextPosition = position + cheat;
-                if (!indexedPath.TryGetValue(nextPosition, out var nextPositionIndex))
-                {
-                    continue;
-                }
-
-                if (nextPositionIndex > positionIndex + 2)
-                {
-                    saving.Add(nextPositionIndex - positionIndex - 2);
-                }
-            }
-        }
-
-        return saving.Count(x => x >= 100);
-    }
-    
     [Sample("###############\n#...#...#.....#\n#.#.#.#.#.###.#\n#S#...#.#.#...#\n#######.#.#.###\n#######.#.#...#\n#######.#.###.#\n###..E#...#...#\n###.#######.###\n#...###...#...#\n#.#####.#.###.#\n#.#...#.#.#...#\n#.#.#.#.#.#.###\n#...#...#...###\n###############", 0)]
-    protected override int Part2(Model input)
+    protected override int Part2(Model input) => Solve(input, 20);
+
+    private static int Solve(Model input, int cheatDistance)
     {
         var start = input.Grid.Keys().First(x => input.Grid[x] == Cell.Start);
         var end = input.Grid.Keys().First(x => input.Grid[x] == Cell.End);
@@ -91,7 +53,7 @@ public partial class Day20 : Day<Day20.Model, int, int>
         {
             var positionIndex = indexedPath[position];
             
-            foreach (var (nextPosition, distance) in FindCheats(input.Grid, position).Distinct())
+            foreach (var (nextPosition, distance) in FindCheats(input.Grid, position, cheatDistance).Distinct())
             {
                 if (!indexedPath.TryGetValue(nextPosition, out var nextPositionIndex))
                 {
@@ -104,16 +66,14 @@ public partial class Day20 : Day<Day20.Model, int, int>
                 }
             }
         }
-
-        var freq = saving.ToFrequency().OrderBy(x => x.Key);
         
         return saving.Count(x => x >= 100);
     }
-
-    private IEnumerable<(Position, int)> FindCheats(Grid<Cell> grid, Position position)
+    
+    private static IEnumerable<(Position, int)> FindCheats(Grid<Cell> grid, Position position, int distance)
     {
-        for (var y = 0; y <= 20; y++)
-        for (var x = 0; x <= (20 - y); x++)
+        for (var y = 0; y <= distance; y++)
+        for (var x = 0; x <= (distance - y); x++)
         {
             var nextPosition1 = position + new Position(x, y);
             var nextPosition2 = position + new Position(-x, y);
