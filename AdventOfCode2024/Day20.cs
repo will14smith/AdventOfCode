@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Collections.Immutable;
 
 namespace AdventOfCode2024;
@@ -47,13 +48,12 @@ public partial class Day20 : Day<Day20.Model, int, int>
 
         var indexedPath = path.Index().ToDictionary(x => x.Item, x => x.Index);
 
-        var saving = new List<int>();
-        
-        foreach (var position in path)
+        var saving = new ConcurrentBag<int>();
+        Parallel.ForEach(path, position =>
         {
             var positionIndex = indexedPath[position];
             
-            foreach (var (nextPosition, distance) in FindCheats(input.Grid, position, cheatDistance).Distinct())
+            foreach (var (nextPosition, distance) in FindCheats(input.Grid, position, cheatDistance))
             {
                 if (!indexedPath.TryGetValue(nextPosition, out var nextPositionIndex))
                 {
@@ -65,39 +65,26 @@ public partial class Day20 : Day<Day20.Model, int, int>
                     saving.Add(nextPositionIndex - positionIndex - distance);
                 }
             }
-        }
+        });
         
         return saving.Count(x => x >= 100);
     }
     
     private static IEnumerable<(Position, int)> FindCheats(Grid<Cell> grid, Position position, int distance)
     {
-        for (var y = 0; y <= distance; y++)
-        for (var x = 0; x <= (distance - y); x++)
+        for (var y = -distance; y <= distance; y++)
+        for (var x = -distance; x <= distance; x++)
         {
-            var nextPosition1 = position + new Position(x, y);
-            var nextPosition2 = position + new Position(-x, y);
-            var nextPosition3 = position + new Position(-x, -y);
-            var nextPosition4 = position + new Position(x, -y);
-
-            if (grid.IsValid(nextPosition1) && grid[nextPosition1] != Cell.Wall)
+            var nextDistance = Math.Abs(x) + Math.Abs(y);
+            if (nextDistance > distance)
             {
-                yield return (nextPosition1, x + y);
-            }
-
-            if (grid.IsValid(nextPosition2) && grid[nextPosition2] != Cell.Wall)
-            {
-                yield return (nextPosition2, x + y);
+                continue;
             }
             
-            if (grid.IsValid(nextPosition3) && grid[nextPosition3] != Cell.Wall)
+            var nextPosition = position + new Position(x, y);
+            if (grid.IsValid(nextPosition) && grid[nextPosition] != Cell.Wall)
             {
-                yield return (nextPosition3, x + y);
-            }
-            
-            if (grid.IsValid(nextPosition4) && grid[nextPosition4] != Cell.Wall)
-            {
-                yield return (nextPosition4, x + y);
+                yield return (nextPosition, nextDistance);
             }
         }
     }
