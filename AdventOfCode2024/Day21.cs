@@ -29,14 +29,17 @@ public partial class Day21 : LineDay<Day21.Model, long, long>
         [Action.Up] = new(1, 0), [Action.Push] = new(2, 0),
         [Action.Left] = new(0, 1), [Action.Down] = new(1, 1), [Action.Right] = new(2, 1),
     };
-    
+
     [Sample("029A\n980A\n179A\n456A\n379A", 126384L)]
-    protected override long Part1(IEnumerable<Model> input)
+    protected override long Part1(IEnumerable<Model> input) => Solve(input, 2);
+    
+    protected override long Part2(IEnumerable<Model> input) => Solve(input, 25);
+
+    private long Solve(IEnumerable<Model> input, long depth)
     {
         var digitMoves = BuildDigitMoves();
         var actionMoves = BuildActionMoves();
-
-
+        
         var result = 0L;
         foreach (var model in input)
         {
@@ -46,7 +49,7 @@ public partial class Day21 : LineDay<Day21.Model, long, long>
             foreach (var next in model.Digits)
             {
                 var movesForNext = digitMoves[(state, next)];
-                var encodedActions = movesForNext.Select(x => EncodeActions(x, actionMoves, 2)).MinBy(x => x);
+                var encodedActions = movesForNext.Select(x => EncodeActions(x, actionMoves, depth)).MinBy(x => x);
                 len += encodedActions;
 
                 state = next;
@@ -56,52 +59,6 @@ public partial class Day21 : LineDay<Day21.Model, long, long>
         }
 
         return result;
-    }
-
-    private readonly Dictionary<(string Key, long Depth), long> _cache = new();
-    private long EncodeActions(IReadOnlyList<Action> actionsToEncode, Dictionary<(Action From, Action To), IReadOnlyList<IReadOnlyList<Action>>> movements, long depth)
-    {
-        if (depth == 0)
-        {
-            return actionsToEncode.Count;
-        }
-
-        var key = string.Create(actionsToEncode.Count, actionsToEncode, static (dst, actions) =>
-        {
-            for (var index = 0; index < actions.Count; index++)
-            {
-                var action = actions[index];
-                dst[index] = action switch
-                {
-                    Action.Left => '<',
-                    Action.Right => '>',
-                    Action.Up => '^',
-                    Action.Down => 'v',
-                    Action.Push => 'A',
-                    _ => throw new ArgumentOutOfRangeException()
-                };
-            }
-        });
-        if (_cache.TryGetValue((key, depth), out var cached))
-        {
-            return cached;
-        }
-        
-        var len = 0L;
-        
-        var state = Action.Push;
-        foreach (var action in actionsToEncode)
-        {
-            var movesForNext = movements[(state, action)];
-            var encodedActions = movesForNext.Select(x => EncodeActions(x, movements, depth - 1)).MinBy(x => x);
-            len += encodedActions;
-
-            state = action;
-        }
-
-        _cache.Add((key, depth), len);
-        
-        return len;
     }
 
     private static Dictionary<(char From, char To), IReadOnlyList<IReadOnlyList<Action>>> BuildDigitMoves()
@@ -167,30 +124,50 @@ public partial class Day21 : LineDay<Day21.Model, long, long>
 
         return moves;
     }
-
-    protected override long Part2(IEnumerable<Model> input)
+    
+    private readonly Dictionary<(string Key, long Depth), long> _cache = new();
+    private long EncodeActions(IReadOnlyList<Action> actionsToEncode, Dictionary<(Action From, Action To), IReadOnlyList<IReadOnlyList<Action>>> movements, long depth)
     {
-        var digitMoves = BuildDigitMoves();
-        var actionMoves = BuildActionMoves();
-        
-        var result = 0L;
-        foreach (var model in input)
+        if (depth == 0)
         {
-            var state = 'A';
-            var len = 0L;
-            
-            foreach (var next in model.Digits)
-            {
-                var movesForNext = digitMoves[(state, next)];
-                var encodedActions = movesForNext.Select(x => EncodeActions(x, actionMoves, 25)).MinBy(x => x);
-                len += encodedActions;
-
-                state = next;
-            }
-            
-            result += len * long.Parse(new string(model.Digits.Take(model.Digits.Count - 1).ToArray()));
+            return actionsToEncode.Count;
         }
 
-        return result;
+        var key = string.Create(actionsToEncode.Count, actionsToEncode, static (dst, actions) =>
+        {
+            for (var index = 0; index < actions.Count; index++)
+            {
+                var action = actions[index];
+                dst[index] = action switch
+                {
+                    Action.Left => '<',
+                    Action.Right => '>',
+                    Action.Up => '^',
+                    Action.Down => 'v',
+                    Action.Push => 'A',
+                    _ => throw new ArgumentOutOfRangeException()
+                };
+            }
+        });
+        if (_cache.TryGetValue((key, depth), out var cached))
+        {
+            return cached;
+        }
+        
+        var len = 0L;
+        
+        var state = Action.Push;
+        foreach (var action in actionsToEncode)
+        {
+            var movesForNext = movements[(state, action)];
+            var encodedActions = movesForNext.Select(x => EncodeActions(x, movements, depth - 1)).MinBy(x => x);
+            len += encodedActions;
+
+            state = action;
+        }
+
+        _cache.Add((key, depth), len);
+        
+        return len;
     }
 }
