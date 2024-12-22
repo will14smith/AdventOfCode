@@ -19,7 +19,7 @@ public partial class Day22 : Day<Day22.Model, long, long>
     {
         for (var i = 0; i < n; i++)
         {
-            secret = Next(secret);
+            secret = (long)Next((ulong)secret);
         }
 
         return secret;
@@ -28,16 +28,18 @@ public partial class Day22 : Day<Day22.Model, long, long>
     [Sample("1\n2\n3\n2024\n", 23L)]
     protected override long Part2(Model input)
     {
-        var ngrams = new ConcurrentDictionary<string, long>();
+        var ngrams = new ConcurrentDictionary<uint, ulong>();
 
         Parallel.ForEach(input.Buyers, buyer =>
         {
-            var seenForBuyer = new HashSet<string>();
-            
-            var a = buyer;
+            var seenForBuyer = new HashSet<uint>();
+
+            var a = (ulong)buyer;
             var b = Next(a);
             var c = Next(b);
             var d = Next(c);
+
+
 
             for (var i = 0; i < 2000 - 2; i++)
             {
@@ -54,8 +56,9 @@ public partial class Day22 : Day<Day22.Model, long, long>
                 b = c;
                 c = d;
                 d = e;
-                
-                var ngram = $"{diff1},{diff2},{diff3},{diff4}";
+
+                var ngram = (uint)(((diff1 + 10) << 24) | ((diff2 + 10) << 16) | ((diff3 + 10) << 8) |
+                                   ((diff4 + 10) << 0));
                 if (!seenForBuyer.Add(ngram))
                 {
                     continue;
@@ -65,20 +68,20 @@ public partial class Day22 : Day<Day22.Model, long, long>
             }
         });
         
-        return ngrams.Max(x => x.Value);
+        return (long) ngrams.Max(x => x.Value);
     }
     
-    private static long Next(long secret)
+    private static ulong Next(ulong secret)
     {
-        var result = secret * 64;
+        var result = secret << 6;
         secret ^= result;
         secret &= 0xFFFFFF;
 
-        result = secret / 32;
+        result = secret >> 5;
         secret ^= result;
         secret &= 0xFFFFFF;
 
-        result = secret * 2048;
+        result = secret << 11;
         secret ^= result;
         secret &= 0xFFFFFF;
 
