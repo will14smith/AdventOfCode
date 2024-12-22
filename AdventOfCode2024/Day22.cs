@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+
 namespace AdventOfCode2024;
 
 [Day]
@@ -26,8 +28,9 @@ public partial class Day22 : Day<Day22.Model, long, long>
     [Sample("1\n2\n3\n2024\n", 23L)]
     protected override long Part2(Model input)
     {
-        var ngrams = new Dictionary<string, long>();
-        foreach (var buyer in input.Buyers)
+        var ngrams = new ConcurrentDictionary<string, long>();
+
+        Parallel.ForEach(input.Buyers, buyer =>
         {
             var seenForBuyer = new HashSet<string>();
             
@@ -57,17 +60,10 @@ public partial class Day22 : Day<Day22.Model, long, long>
                 {
                     continue;
                 }
-                
-                if (ngrams.TryGetValue(ngram, out var existing))
-                {
-                    ngrams[ngram] = existing + price;
-                }
-                else
-                {
-                    ngrams[ngram] = price;
-                }
+
+                ngrams.AddOrUpdate(ngram, static (_, a) => a, static (_, a, b) => a + b, price);
             }
-        }
+        });
         
         return ngrams.Max(x => x.Value);
     }
