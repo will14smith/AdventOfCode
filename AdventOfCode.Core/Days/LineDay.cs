@@ -4,6 +4,6 @@ public abstract class LineDay<TModel, TResult1, TResult2> : Day<IEnumerable<TMod
 {
     protected LineDay(int dayNumber, ITestOutputHelper output) : base(dayNumber, output) { }
 
-    protected override IEnumerable<TModel> Parse(string input) => input.Split("\n").Select(ParseLine).ToArray();
+    protected override IEnumerable<TModel> Parse(string input) => input.Split("\n", StringSplitOptions.RemoveEmptyEntries).Select(ParseLine).ToArray();
     protected abstract TModel ParseLine(string input);
 }
