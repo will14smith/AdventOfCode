@@ -13,7 +13,7 @@ public partial class Day03 : Day<Day03.Model, long, long>
     [Sample("987654321111111\n811111111111119\n234234234234278\n818181911112111\n", 3121910778619)]
     protected override long Part2(Model input) => input.Banks.Sum(x => MaxJoltage(x, 12));
 
-    private long MaxJoltage(string bank, int count)
+    private long MaxJoltage(ReadOnlySpan<char> bank, int count)
     {
         if (count == 0)
         {
