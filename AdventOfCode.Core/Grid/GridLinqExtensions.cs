@@ -2,6 +2,21 @@
 
 public static class GridLinqExtensions
 {
+    public static Position First<TElement>(this Grid<TElement> grid, Func<TElement, bool> predicate)
+    {
+        for (var y = 0; y < grid.Height; y++)
+        for (var x = 0; x < grid.Width; x++)
+        {
+            var element = grid[x, y];
+            if (predicate(element))
+            {
+                return new Position(x, y);
+            }
+        }
+
+        throw new InvalidOperationException("No element satisfies the condition in predicate.");
+    }
+    
     public static Grid<TSelect> Select<TElement, TSelect>(this Grid<TElement> grid, Func<TElement, TSelect> selector)
     {
         var elementsLength = grid._elements.Length;
