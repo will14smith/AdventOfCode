@@ -34,7 +34,12 @@ public partial class Day08 : Day<Day08.Model, long, long>
     {
         var fromCircuit = circuits[from];
         var toCircuit = circuits[to];
-            
+
+        if (fromCircuit == toCircuit)
+        {
+            return;
+        }
+        
         toCircuit.UnionWith(fromCircuit);
         foreach (var box in fromCircuit)
         {
@@ -64,18 +69,20 @@ public partial class Day08 : Day<Day08.Model, long, long>
     
     private static IReadOnlyList<(Position3 From, Position3 To, decimal Distance)> CalculateDistancesAscending(Model input)
     {
-        var distances = new Dictionary<(Position3, Position3), decimal>();
+        var distances = new List<(Position3 From, Position3 To, decimal Distance)>();
         for (var i = 0; i < input.JunctionBoxes.Count; i++)
-        for (var j = i + 1; j < input.JunctionBoxes.Count; j++)
         {
-            var a = input.JunctionBoxes[i];
-            var b = input.JunctionBoxes[j];
+            for (var j = i + 1; j < input.JunctionBoxes.Count; j++)
+            {
+                var a = input.JunctionBoxes[i];
+                var b = input.JunctionBoxes[j];
 
-            var distance = (a - b).StraightLineDistance();
+                var distance = (a - b).StraightLineDistance();
 
-            distances.Add((a, b), distance);
+                distances.Add((a, b, distance));
+            }
         }
 
-        return distances.Select(x => (x.Key.Item1, x.Key.Item2, x.Value)).OrderBy(x => x.Value).ToList();
+        return distances.OrderBy(x => x.Distance).ToList();
     }
 }
