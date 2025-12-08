@@ -60,5 +60,8 @@ public static class Position3NeighbourExtensions
     public static int TaxiDistance(this Position3 position) => position.BlockDistance();
     public static int BlockDistance(this Position3 position) => Position3.SumElements(Position3.Abs(position));
     
+    public static decimal StraightLineDistance(this Position3 position) => position.EuclideanDistance();
+    public static decimal EuclideanDistance(this Position3 position) => (decimal)Math.Sqrt((long)position.X * position.X + (long)position.Y * position.Y + (long)position.Z * position.Z);
+    
     public static IEnumerable<Position3> OrthogonalNeighbours(this Position3 position) => Position3.OrthogonalNeighbours.Select(delta => position + delta);
 }
